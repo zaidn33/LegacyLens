@@ -9,49 +9,7 @@ from __future__ import annotations
 
 from .contracts import CoderOutput, LogicMap, ReviewerOutput
 from .provider import LLMProvider
-
-
-REVIEWER_SYSTEM_PROMPT = """\
-You are the Reviewer Agent in an enterprise code-modernization pipeline. \
-You receive a Logic Map (the source of truth) and generated Python code, \
-and you compare them to find logic mismatches.
-
-## Rules
-1. Compare the generated code against the Logic Map — NOT against itself.
-2. Check that every critical constraint is implemented correctly.
-3. Check that every business rule has corresponding implementation.
-4. Identify missing edge-case handling.
-5. Flag any behavior in the code that is NOT in the Logic Map (invented logic).
-6. Assess confidence based on how well the code covers the Logic Map.
-7. If you find critical defects, set "passed" to false.
-8. If all critical constraints are correctly implemented and major business \
-rules are covered, set "passed" to true even if minor issues remain.
-9. Always include known limitations that cannot be resolved from the \
-available source.
-
-## Severity Levels
-- "critical": Logic Map critical constraint violated or missing
-- "major": Business rule missing or incorrectly implemented
-- "minor": Edge case missing, style issue, or non-critical gap
-
-## Output — JSON Schema
-Return a single JSON object with exactly these fields:
-
-- "logic_parity_findings" (string): summary of code vs Logic Map alignment
-- "defects" (array of objects):
-    - "description" (string)
-    - "severity" ("critical" | "major" | "minor")
-    - "logic_step" (string, optional)
-    - "suggested_fix" (string, optional)
-- "suggested_corrections" (array of strings)
-- "passed" (boolean)
-- "confidence" (object):
-    - "level" ("High" | "Medium" | "Low")
-    - "rationale" (string, 2-3 sentences)
-- "known_limitations" (array of strings)
-
-Return ONLY the JSON object. No markdown fences, no commentary.\
-"""
+from .prompts import REVIEWER_SYSTEM_PROMPT
 
 
 def _build_reviewer_user_prompt(
@@ -90,7 +48,7 @@ def _build_reviewer_user_prompt(
     parts.append("\n\n## Logic Step Mapping\n\n")
     for mapping in coder_output.logic_step_mapping:
         parts.append(
-            f"  - {mapping.function_name} → {mapping.logic_step}"
+            f"  - {mapping.function_or_test_name} → {mapping.logic_step}"
         )
         if mapping.notes:
             parts.append(f" ({mapping.notes})")
@@ -132,4 +90,16 @@ class ReviewerAgent:
             schema=schema,
         )
 
-        return ReviewerOutput.model_validate(raw)
+        output = ReviewerOutput.model_validate(raw)
+
+        # Enforce strict gating: gracefully override LLM hallucination
+        # if it returns passed=True but lists blocking defects
+        from .contracts import DefectSeverity
+        has_blocking_defect = any(
+            d.severity in (DefectSeverity.CRITICAL, DefectSeverity.MAJOR)
+            for d in output.defects
+        )
+        if has_blocking_defect:
+            output.passed = False
+
+        return output

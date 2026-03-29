@@ -27,6 +27,13 @@ class ConfidenceLevel(str, Enum):
     LOW = "Low"
 
 
+class DefectSeverity(str, Enum):
+    """Categorized severity levels for catching pipeline defects."""
+    CRITICAL = "critical"
+    MAJOR = "major"
+    MINOR = "minor"
+
+
 # ---------------------------------------------------------------------------
 # Sub-models
 # ---------------------------------------------------------------------------
@@ -84,6 +91,10 @@ class LogicMap(BaseModel):
     logic_dictionary: list[DictEntry] = Field(..., min_length=1)
     step_by_step_logic_flow: list[str] = Field(..., min_length=1)
     business_rules: list[str] = Field(..., min_length=1)
+    source_snippet_references: dict[str, str] = Field(
+        default_factory=dict,
+        description="Traceability map linking business rules or logic steps back to their corresponding exact legacy source code snippets"
+    )
     edge_cases: list[str] = Field(default_factory=list)
     dependencies: list[str] = Field(default_factory=list)
     critical_constraints: list[str] = Field(default_factory=list)
@@ -120,8 +131,8 @@ class LogicMap(BaseModel):
 
 class LogicStepMapping(BaseModel):
     """Maps a generated function/section back to a Logic Map step."""
-    function_name: str = Field(..., description="Name of the generated function or class")
-    logic_step: str = Field(..., description="The logic-flow step this implements")
+    function_or_test_name: str = Field(..., description="Name of the generated function, class, or Pytest case")
+    logic_step: str = Field(..., description="The logic-flow step, business rule, or critical constraint this implements")
     notes: str = Field(default="", description="Implementation notes or deviations")
 
 
@@ -168,7 +179,7 @@ class CoderOutput(BaseModel):
 class Defect(BaseModel):
     """A specific defect found during review."""
     description: str = Field(..., description="What is wrong")
-    severity: str = Field(..., description="critical | major | minor")
+    severity: DefectSeverity = Field(..., description="Severity level of the defect")
     logic_step: str = Field(default="", description="Which logic step is affected")
     suggested_fix: str = Field(default="", description="How to fix it")
 

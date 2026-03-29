@@ -77,7 +77,12 @@ def _run_graph(job_id: str, source_code: str, file_name: str) -> None:
                 if "result" in state_update and state_update["result"] is not None:
                     jobs[job_id]["status"] = "completed"
                     # Serialize the PipelineResult Pydantic payload for API JSON
-                    jobs[job_id]["result"] = state_update["result"].model_dump()
+                    result_obj = state_update["result"]
+                    jobs[job_id]["result"] = result_obj.model_dump()
+                    
+                    # Persist artifacts into run history
+                    from backend.pipeline import save_run_history
+                    save_run_history(result_obj, base_dir="runs", job_id=job_id)
                     
     except Exception as e:
         jobs[job_id]["status"] = "failed"

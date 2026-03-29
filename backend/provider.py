@@ -788,22 +788,22 @@ class TestEdgeCases:
             ),
             "logic_step_mapping": [
                 {
-                    "function_name": "validate_customer",
+                    "function_or_test_name": "validate_customer",
                     "logic_step": "4. Validate the customer record",
                     "notes": "Returns tuple for error code propagation",
                 },
                 {
-                    "function_name": "calculate_tiered_charges",
+                    "function_or_test_name": "calculate_tiered_charges",
                     "logic_step": "6-9. Calculate base, tier 2, tier 3, and sum",
                     "notes": "Pure function covering steps 6 through 9",
                 },
                 {
-                    "function_name": "apply_late_penalty",
+                    "function_or_test_name": "apply_late_penalty",
                     "logic_step": "10. Check payment history and apply penalty",
                     "notes": "Includes the 25% cap for >90 days overdue",
                 },
                 {
-                    "function_name": "process_billing",
+                    "function_or_test_name": "process_billing",
                     "logic_step": "1-3, 11-12. Main batch loop",
                     "notes": (
                         "File I/O replaced with in-memory data structures; "
@@ -837,7 +837,14 @@ class TestEdgeCases:
                 "billed, and error logging does not halt the batch. The billing "
                 "date defaults to the actual processing date."
             ),
-            "defects": [],
+            "defects": [
+                {
+                    "description": "Missing module docstring on tests",
+                    "severity": "minor",
+                    "logic_step": "",
+                    "suggested_fix": "Add a descriptive docstring to test_modernized.py"
+                }
+            ],
             "suggested_corrections": [],
             "passed": True,
             "confidence": {
