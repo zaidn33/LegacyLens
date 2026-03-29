@@ -22,6 +22,8 @@ from backend.provider import GraniteProvider, MockProvider
 from backend.render import render_logic_map
 from backend.reviewer import ReviewerAgent
 from backend.scoring import aggregate_confidence
+from backend.state import PipelineState
+from backend.graph import build_pipeline_graph
 
 MAX_ITERATIONS = 3
 
@@ -161,6 +163,48 @@ def run_pipeline(
     return result
 
 
+def run_pipeline_graph(
+    source_path: str | Path,
+    provider_name: str = "mock",
+    output_dir: str | Path = "output",
+) -> PipelineResult:
+    """Run the pipeline via LangGraph to ensure behavioral parity."""
+    print("[Graph] Starting LangGraph pipeline execution...")
+    source_path = Path(source_path)
+    if not source_path.exists():
+        raise FileNotFoundError(f"Source file not found: {source_path}")
+    source_code = source_path.read_text(encoding="utf-8")
+    
+    if provider_name == "mock":
+        provider = MockProvider()
+    elif provider_name == "granite":
+        provider = GraniteProvider()
+    else:
+        raise ValueError(f"Unknown provider: {provider_name}")
+        
+    analyst = AnalystAgent(provider)
+    coder = CoderAgent(provider)
+    reviewer = ReviewerAgent(provider)
+    graph = build_pipeline_graph(analyst, coder, reviewer)
+    
+    initial_state = PipelineState(
+        source_code=source_code,
+        file_name=source_path.name,
+        logic_map=None, coder_output=None, reviewer_output=None,
+        result=None, iterations=0, error=None
+    )
+    
+    final_state = graph.invoke(initial_state)
+    if final_state.get("error"):
+        raise RuntimeError(f"Graph failed: {final_state['error']}")
+        
+    result = final_state.get("result")
+    if result:
+        print(f"[Graph] Pass achieved on iteration {final_state.get('iterations', 0)}.")
+        return result
+    raise RuntimeError("Graph completed but returned no result.")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="LegacyLens Pipeline — full Analyst → Coder → Reviewer loop",
@@ -180,14 +224,26 @@ def main(argv: list[str] | None = None) -> None:
         default="output",
         help="Directory to write output files (default: output)",
     )
+    parser.add_argument(
+        "--use-graph",
+        action="store_true",
+        help="Invoke the replacement LangGraph execution path instead of the procedural loop.",
+    )
     args = parser.parse_args(argv)
 
     try:
-        run_pipeline(
-            source_path=args.source_file,
-            provider_name=args.provider,
-            output_dir=args.output_dir,
-        )
+        if args.use_graph:
+            run_pipeline_graph(
+                source_path=args.source_file,
+                provider_name=args.provider,
+                output_dir=args.output_dir,
+            )
+        else:
+            run_pipeline(
+                source_path=args.source_file,
+                provider_name=args.provider,
+                output_dir=args.output_dir,
+            )
     except Exception as exc:
         print(f"\nPipeline failed: {exc}", file=sys.stderr)
         sys.exit(1)

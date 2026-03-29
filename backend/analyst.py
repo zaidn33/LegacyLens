@@ -21,26 +21,20 @@ class AnalystAgent:
 
     def analyze(self, source_path: str | Path) -> LogicMap:
         """
-        Analyze a legacy source file.
-
-        1. Read the file from disk.
-        2. Build system + user prompts.
-        3. Call the LLM provider.
-        4. Validate the response against the Pydantic schema.
-
-        Raises
-        ------
-        FileNotFoundError
-            If *source_path* does not exist.
-        pydantic.ValidationError
-            If the LLM response is missing or has malformed fields.
+        Analyze a legacy source file from disk.
         """
         source_path = Path(source_path)
         if not source_path.exists():
             raise FileNotFoundError(f"Source file not found: {source_path}")
 
         source_code = source_path.read_text(encoding="utf-8")
-        user_prompt = build_user_prompt(source_code, source_path.name)
+        return self.analyze_source(source_code, source_path.name)
+
+    def analyze_source(self, source_code: str, file_name: str = "source.cbl") -> LogicMap:
+        """
+        Analyze a raw legacy source string.
+        """
+        user_prompt = build_user_prompt(source_code, file_name)
         schema = LogicMap.model_json_schema()
 
         raw_response = self.provider.generate(
