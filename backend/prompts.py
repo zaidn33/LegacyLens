@@ -72,12 +72,17 @@ unsupported interpretation.\
 """
 
 
-def build_user_prompt(source_code: str, filename: str) -> str:
-    """Build the user prompt containing the source code to analyze."""
-    return (
-        f"Analyze this legacy source file ({filename}):\n\n"
-        f"```\n{source_code}\n```"
-    )
+def build_user_prompt(source_code: str, filename: str, dependencies_dict: dict[str, str] | None = None) -> str:
+    """Build the user prompt containing the source code and optionally its dependencies."""
+    prompt = f"Analyze this legacy primary source file ({filename}):\n\n```\n{source_code}\n```\n"
+    
+    if dependencies_dict:
+        prompt += "\n## Auxiliary Dependency Files Provided:\n"
+        for dep_name, dep_code in dependencies_dict.items():
+            prompt += f"\n### '{dep_name}':\n```\n{dep_code}\n```\n"
+
+    prompt += "\nUse these auxiliary files to resolve outstanding dependencies. If a reference goes unsatisfied by these files, accurately flag it as unresolved.\n"
+    return prompt
 
 # ---------------------------------------------------------------------------
 # Coder Prompts

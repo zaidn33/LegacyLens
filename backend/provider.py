@@ -125,21 +125,23 @@ class MockProvider(LLMProvider):
             return self._mock_response
 
         # Route based on system prompt identity
+        # Route based on system prompt identity
         if "Legacy Logic Architect" in system_prompt:
-            return self._analyst_response()
+            is_multi_file = "Auxiliary Dependency Files Provided" in user_prompt
+            return self._analyst_response(is_multi_file)
         elif "Coder Agent" in system_prompt:
             return self._coder_response()
         elif "Reviewer Agent" in system_prompt:
             return self._reviewer_response()
         else:
-            return self._analyst_response()  # fallback
+            return self._analyst_response(False)  # fallback
 
     # ------------------------------------------------------------------
     # Analyst mock
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _analyst_response() -> dict:
+    def _analyst_response(is_multi_file: bool = False) -> dict:
         """Realistic Logic Map for the sample COBOL billing module."""
         return {
             "executive_summary": (
@@ -318,28 +320,20 @@ class MockProvider(LLMProvider):
                 "Usage exactly at a tier boundary: the threshold value "
                 "itself falls in the lower tier.",
                 "Days overdue exactly at 30: no penalty applied (penalty "
-                "triggers at >30).",
-                "Days overdue exactly at 90: standard penalty applied, not "
-                "the capped rate (cap triggers at >90).",
-                "Customer record with empty CUST-ID: validation failure, "
-                "logged to error file.",
-                "Negative usage value: no explicit handling found in source; "
-                "likely an unhandled edge case.",
-                "Rate table with zero rate values: charges compute to $0.00; "
-                "no explicit guard.",
+                "Negative usage is treated as zero.",
+                "Missing account creation dates trigger an automatic default to standard rates.",
+                "Delinquent records missing past-due flags silently skip penalties."
             ],
             "dependencies": [
-                "CUSTOMER-FILE: sequential input file, record layout assumed "
-                "from COPY CUSTOMER-RECORD",
-                "RATE-FILE: indexed input file containing tier pricing, "
-                "layout assumed from COPY RATE-RECORD",
-                "BILLING-OUTPUT: sequential output file, layout defined in "
-                "BILLING-SUMMARY",
-                "ERROR-LOG: sequential output file for error reporting",
-                "COPY CUSTOMER-RECORD: copybook not provided — field layout "
-                "inferred from usage patterns",
-                "COPY RATE-RECORD: copybook not provided — field layout "
-                "inferred from usage patterns",
+                {
+                    "reference_name": "definitions.cpy",
+                    "resolved_filename": "definitions.cpy",
+                    "status": "resolved"
+                } if is_multi_file else {
+                    "reference_name": "CUSTOMER-RECORD-FILE",
+                    "resolved_filename": None,
+                    "status": "unresolved"
+                }
             ],
             "critical_constraints": [
                 "Tier calculation order must be preserved: base -> tier 2 -> "

@@ -78,6 +78,28 @@ export default function LogicMapView({ logicMap }: Props) {
         </section>
       )}
 
+      {/* Dependencies */}
+      {logicMap.dependencies && logicMap.dependencies.length > 0 && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>
+            Macro Dependencies
+            <span className={styles.count}>{logicMap.dependencies.length}</span>
+          </h3>
+          <ul className={styles.list}>
+            {logicMap.dependencies.map((dep, i) => (
+              <li key={i} className={styles.dependencyItem}>
+                <span className={styles.depName}>{dep.reference_name}</span>
+                {dep.status === "unresolved" ? (
+                  <span className={styles.statusUnresolved}>⚠ Unresolved</span>
+                ) : (
+                  <span className={styles.statusResolved}>✓ {dep.resolved_filename}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* I/O */}
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Inputs &amp; Outputs</h3>

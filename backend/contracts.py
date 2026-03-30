@@ -58,6 +58,13 @@ class PipelineError(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Logic Map Models
+# ---------------------------------------------------------------------------
+
+class DependencyResolution(BaseModel):
+    reference_name: str
+    resolved_filename: str | None = None
+    status: str  # "resolved" or "unresolved"
 # Sub-models
 # ---------------------------------------------------------------------------
 
@@ -119,7 +126,7 @@ class LogicMap(BaseModel):
         description="Traceability map linking business rules or logic steps back to their corresponding exact legacy source code snippets"
     )
     edge_cases: list[str] = Field(default_factory=list)
-    dependencies: list[str] = Field(default_factory=list)
+    dependencies: list[DependencyResolution] = Field(default_factory=list)
     critical_constraints: list[str] = Field(default_factory=list)
     assumptions_and_ambiguities: AssumptionsAndAmbiguities
     test_relevant_scenarios: list[str] = Field(..., min_length=1)

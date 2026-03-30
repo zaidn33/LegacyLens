@@ -32,11 +32,11 @@ export default function DashboardPage() {
   }, [fetchJobs]);
 
   const handleUpload = useCallback(
-    async (file: File) => {
+    async (file: File, dependencies?: File[]) => {
       setIsUploading(true);
       setError(null);
       try {
-        const res = await submitJob(file);
+        const res = await submitJob(file, dependencies);
         await fetchJobs();
         router.push(`/jobs/${res.job_id}`);
       } catch (e) {

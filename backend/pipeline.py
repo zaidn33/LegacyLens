@@ -127,6 +127,7 @@ def run_pipeline(
     source_path: str | Path,
     provider_name: str = "mock",
     output_dir: str | Path = "output",
+    dependencies_dict: dict[str, str] | None = None,
 ) -> PipelineResult:
     """
     Run the full Analyst → Coder → Reviewer pipeline.
@@ -153,7 +154,7 @@ def run_pipeline(
     # downstream can run.  We let the exception propagate.
     print("[Stage 1/3] Analyst Agent — extracting Logic Map...")
     analyst = AnalystAgent(provider=provider)
-    logic_map = analyst.analyze(source_path)
+    logic_map = analyst.analyze(source_path, dependencies_dict=dependencies_dict)
 
     print(f"  Logic Map: {len(logic_map.business_rules)} business rules, "
           f"{len(logic_map.critical_constraints)} critical constraints")

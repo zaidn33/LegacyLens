@@ -61,7 +61,15 @@ def init_db(db_path: Path | str = DB_PATH) -> None:
                 updated_at      TEXT NOT NULL,
                 run_dir         TEXT
             );
+        """)
+        
+        # Additive migration for Phase 6: Multi-File Projects
+        try:
+            conn.execute("ALTER TABLE jobs ADD COLUMN submitted_files TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
+        conn.executescript("""
             CREATE TABLE IF NOT EXISTS pipeline_results (
                 job_id           TEXT PRIMARY KEY REFERENCES jobs(id),
                 result_json      TEXT NOT NULL,
@@ -101,17 +109,21 @@ def create_job(
     job_id: str,
     file_name: str,
     source_code: str,
+    submitted_files: list[str] | None = None,
     *,
     db_path: Path | str = DB_PATH,
 ) -> dict[str, Any]:
     """Insert a new job row with status='pending'. Returns the row as a dict."""
+    if submitted_files is None:
+        submitted_files = [file_name]
+    
     now = _now_iso()
     conn = _get_connection(db_path)
     try:
         conn.execute(
-            """INSERT INTO jobs (id, file_name, source_code, status, created_at, updated_at)
-               VALUES (?, ?, ?, 'pending', ?, ?)""",
-            (job_id, file_name, source_code, now, now),
+            """INSERT INTO jobs (id, file_name, source_code, status, created_at, updated_at, submitted_files)
+               VALUES (?, ?, ?, 'pending', ?, ?, ?)""",
+            (job_id, file_name, source_code, now, now, json.dumps(submitted_files)),
         )
         conn.commit()
         return get_job(job_id, db_path=db_path)

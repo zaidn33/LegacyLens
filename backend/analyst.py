@@ -19,7 +19,7 @@ class AnalystAgent:
     def __init__(self, provider: LLMProvider) -> None:
         self.provider = provider
 
-    def analyze(self, source_path: str | Path) -> LogicMap:
+    def analyze(self, source_path: str | Path, dependencies_dict: dict[str, str] | None = None) -> LogicMap:
         """
         Analyze a legacy source file from disk.
         """
@@ -28,13 +28,18 @@ class AnalystAgent:
             raise FileNotFoundError(f"Source file not found: {source_path}")
 
         source_code = source_path.read_text(encoding="utf-8")
-        return self.analyze_source(source_code, source_path.name)
+        return self.analyze_source(source_code, source_path.name, dependencies_dict=dependencies_dict)
 
-    def analyze_source(self, source_code: str, file_name: str = "source.cbl") -> LogicMap:
+    def analyze_source(
+        self, 
+        source_code: str, 
+        file_name: str = "source.cbl", 
+        dependencies_dict: dict[str, str] | None = None
+    ) -> LogicMap:
         """
         Analyze a raw legacy source string.
         """
-        user_prompt = build_user_prompt(source_code, file_name)
+        user_prompt = build_user_prompt(source_code, file_name, dependencies_dict=dependencies_dict)
         schema = LogicMap.model_json_schema()
 
         raw_response = self.provider.generate(

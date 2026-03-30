@@ -62,6 +62,7 @@ def build_pipeline_graph(
             logic_map = analyst.analyze_source(
                 state["source_code"],
                 state.get("file_name", "source.cbl"),
+                dependencies_dict=state.get("dependencies_dict")
             )
             return {"logic_map": logic_map}
         except Exception as e:

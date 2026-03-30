@@ -34,6 +34,12 @@ export interface AssumptionsAndAmbiguities {
   unknown: string[];
 }
 
+export interface DependencyResolution {
+  reference_name: string;
+  resolved_filename: string | null;
+  status: "resolved" | "unresolved";
+}
+
 export interface LogicMap {
   executive_summary: string;
   business_objective: string;
@@ -42,7 +48,7 @@ export interface LogicMap {
   step_by_step_logic_flow: string[];
   business_rules: string[];
   edge_cases: string[];
-  dependencies: string[];
+  dependencies: DependencyResolution[];
   critical_constraints: string[];
   assumptions_and_ambiguities: AssumptionsAndAmbiguities;
   test_relevant_scenarios: string[];

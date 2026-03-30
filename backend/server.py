@@ -124,10 +124,11 @@ _CONTENT_TYPES: dict[str, str] = {
 # Background pipeline runner
 # ---------------------------------------------------------------------------
 
-def _run_graph(job_id: str, source_code: str, file_name: str) -> None:
+def _run_graph(job_id: str, source_code: str, file_name: str, dependencies_dict: dict[str, str] | None = None) -> None:
     """Executes the LangGraph pipeline in the background, persisting to DB."""
     db.update_job(job_id, status="processing")
 
+    deps = dependencies_dict if dependencies_dict else {}
     initial_state = PipelineState(
         source_code=source_code,
         file_name=file_name,
@@ -138,6 +139,7 @@ def _run_graph(job_id: str, source_code: str, file_name: str) -> None:
         iterations=0,
         error=None,
         errors=[],
+        dependencies_dict=deps,
     )
 
     try:
@@ -189,15 +191,30 @@ def _run_graph(job_id: str, source_code: str, file_name: str) -> None:
 def create_job(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    dependencies: list[UploadFile] = File(default=[])
 ) -> dict[str, str]:
-    """Submit a COBOL file to spawn a new modernization job."""
+    """Submit a primary COBOL file and optional dependencies to spawn a metadata job."""
     content = file.file.read()
     source_code = content.decode("utf-8", errors="replace")
+    
+    dependencies_dict = {}
+    submitted_files = [file.filename or "unknown.cbl"]
+    
+    # Process optional dependencies recursively without blowing up backwards compatibility
+    if dependencies and len(dependencies) > 0:
+        for dep in dependencies:
+            if not dep or not dep.filename:
+                continue
+            dep_content = dep.file.read()
+            # File(...) can return a single object with no filename if empty payload mapping happens in some clients
+            if dep.filename:
+                dependencies_dict[dep.filename] = dep_content.decode("utf-8", errors="replace")
+                submitted_files.append(dep.filename)
 
     job_id = str(uuid.uuid4())
-    db.create_job(job_id, file.filename or "unknown.cbl", source_code)
+    db.create_job(job_id, file.filename or "unknown.cbl", source_code, submitted_files)
 
-    background_tasks.add_task(_run_graph, job_id, source_code, file.filename or "unknown.cbl")
+    background_tasks.add_task(_run_graph, job_id, source_code, file.filename or "unknown.cbl", dependencies_dict)
 
     return {"job_id": job_id, "status": "processing"}
 

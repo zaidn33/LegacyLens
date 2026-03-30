@@ -6,9 +6,15 @@ import type { JobListResponse, JobStatusResponse } from "./types";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
-export async function submitJob(file: File): Promise<{ job_id: string; status: string }> {
+export async function submitJob(file: File, dependencies?: File[]): Promise<{ job_id: string; status: string }> {
   const formData = new FormData();
   formData.append("file", file);
+  
+  if (dependencies) {
+    dependencies.forEach((dep) => {
+      formData.append("dependencies", dep);
+    });
+  }
 
   const res = await fetch(`${API_BASE}/jobs`, {
     method: "POST",
