@@ -4,3 +4,6 @@ uvicorn
 python-multipart
 langgraph
 langchain-core
+langchain-openai
+httpx
+tenacity

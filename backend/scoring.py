@@ -65,9 +65,13 @@ def aggregate_confidence(
         1 for d in reviewer_output.defects if d.severity == "major"
     )
 
+    # Cap at Medium if there are unknown/unresolved ambiguities
+    if logic_map.assumptions_and_ambiguities.unknown:
+        level_score = min(level_score, 2)
+
     if critical_remaining > 0:
         level_score = 1  # Force Low
-    elif major_remaining >= 2:
+    elif major_remaining >= 1:
         level_score = max(1, level_score - 1)
 
     final_level = _reverse[level_score]

@@ -6,6 +6,7 @@ directories, CORS enabled for the Next.js frontend.
 """
 
 import uuid
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,11 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Q
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel, Field
+
+# Suppress Pydantic / Langchain warnings for cleaner output
+warnings.filterwarnings("ignore", message=".*Pydantic V1.*")
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+warnings.filterwarnings("ignore", module="langchain")
 
 from backend.state import PipelineState
 from backend.graph import build_pipeline_graph

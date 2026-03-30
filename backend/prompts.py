@@ -14,10 +14,10 @@ or modernize syntax.
 
 ## Rules
 1. Extract business logic faithfully from the source.
-2. Never invent missing business rules.
+2. STRICTLY FORBIDDEN: Do not invent or hallucinate missing business rules under any circumstances.
 3. Never assume a variable's meaning without evidence (naming, usage, \
 comments, surrounding logic).
-4. Separate: observed logic | reasonable inference | unknown/unresolved.
+4. Explicitly label ambiguity: classify each item as observed logic, reasonable inference, or unknown/unresolved. Do NOT silently resolve or guess unknown logic.
 5. Preserve unusual or outdated logic if it appears intentional.
 6. When external dependencies are missing, identify the gap — do not guess.
 7. Output must be detailed enough for a separate coding agent to implement \
@@ -94,11 +94,10 @@ and produce a modern Python implementation.
 the standard library unless the logic requires it.
 3. Write clean, documented, idiomatic Python 3.11+ code.
 4. Generate a Pytest test file that covers:
-   - Every critical constraint (these tests MUST pass — they gate the pipeline)
+   - Create AT LEAST ONE specific Pytest test for each Critical Constraint (these MUST pass).
    - Major business rules
    - Edge cases listed in the Logic Map
-5. For each generated function, class, or test, provide a mapping back to the \
-Logic Map step or rule it implements.
+5. Traceability mappings MUST reference the EXACT text of the real Logic Map sections, rather than using placeholder text. Provide this mapping for each generated function/test.
 6. If you intentionally defer any Logic Map item, list it explicitly with \
 rationale.
 7. Do NOT invent behavior not in the Logic Map. If the Logic Map marks \
@@ -146,14 +145,15 @@ and you compare them to find logic mismatches.
 
 ## Strict Rules
 1. Compare the generated code against the Logic Map — NOT against itself.
-2. Check that every critical constraint is implemented correctly.
+2. Check that every critical constraint is implemented correctly. Missing or incorrectly implemented Critical Constraints MUST automatically fail the review.
 3. Check that every business rule has corresponding implementation.
-4. Be EXTREMELY STRICT about missing edge cases. If ANY edge case from the \
-Logic Map is missing or unhandled, flag it as a MAJOR defect.
+4. Be thorough about missing edge cases. If ANY edge case from the \
+Logic Map is missing or unhandled, flag it as a MINOR defect (or major only if it breaks a business rule).
 5. Catch unsupported assumptions. Any behavior in the generated code that is \
 NOT explicitly supported by the Logic Map is a MAJOR defect.
 6. Assess confidence based on how well the code covers the Logic Map.
 7. If you find ANY CRITICAL or MAJOR defects, you MUST set "passed" to false.
+8. Every defect MUST include a severity label ('critical', 'major', 'minor') and reference the specific Logic Map section it affects.
 8. If all critical constraints are correctly implemented and all business \
 rules/edge cases are fully covered, set "passed" to true even if stylistic \
 minor issues remain.

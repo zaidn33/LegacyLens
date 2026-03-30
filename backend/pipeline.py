@@ -10,9 +10,15 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import warnings
 from pathlib import Path
 
 from pydantic import ValidationError
+
+# Suppress Pydantic / Langchain warnings for cleaner output
+warnings.filterwarnings("ignore", message=".*Pydantic V1.*")
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+warnings.filterwarnings("ignore", module="langchain")
 
 # Allow running as `python backend/pipeline.py` from project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

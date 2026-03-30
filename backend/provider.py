@@ -9,8 +9,11 @@ Ships with:
 from __future__ import annotations
 
 import os
+import json
 from abc import ABC, abstractmethod
 from typing import Any
+
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 
 class LLMProvider(ABC):
@@ -33,36 +36,67 @@ class LLMProvider(ABC):
 
 class GraniteProvider(LLMProvider):
     """
-    IBM Granite 4.0 provider.
+    IBM Granite 4.0 provider (via OpenAI compatible endpoint).
 
-    Raises ``NotImplementedError`` until Granite API access is configured.
-    Implement against the actual Granite REST / SDK when the key is available.
+    Handles rate limits, timeouts, and malformed JSON via tenacity retries
+    and explicit error mapping.
     """
 
     def __init__(
         self,
         api_key: str | None = None,
+        base_url: str | None = None,
         model: str = "granite-3.0-8b-instruct",
     ):
-        self.api_key = api_key or os.environ.get("GRANITE_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "Granite API key required. Set GRANITE_API_KEY env var "
-                "or pass api_key to GraniteProvider()."
-            )
+        self.api_key = api_key or os.environ.get("GRANITE_API_KEY", "dummy-local-key")
+        self.base_url = base_url or os.environ.get("OPENAI_API_BASE", "http://localhost:11434/v1")
         self.model = model
 
+        try:
+            from langchain_openai import ChatOpenAI
+        except ImportError:
+            raise ImportError("langchain-openai is required for GraniteProvider")
+
+        self.llm = ChatOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            model=self.model,
+            max_retries=0,  # Let tenacity handle it
+            temperature=0.0,
+        )
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True
+    )
     def generate(
         self,
         system_prompt: str,
         user_prompt: str,
         schema: dict[str, Any],
     ) -> dict:
-        raise NotImplementedError(
-            "GraniteProvider.generate() is not yet implemented. "
-            "Use MockProvider for development or implement against "
-            "the Granite API when access is available."
-        )
+        from langchain_core.messages import SystemMessage, HumanMessage
+        import httpx
+        
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt)
+        ]
+
+        structured_llm = self.llm.with_structured_output(schema)
+
+        try:
+            result = structured_llm.invoke(messages)
+            if not result:
+                raise ValueError("LLM returned empty or malformed output")
+            return result
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse structured JSON output: {e}")
+        except httpx.HTTPStatusError as e:
+            raise ValueError(f"Provider HTTP error {e.response.status_code}: {e}")
+        except Exception as e:
+            raise ValueError(f"Provider execution failed: {e}")
 
 
 # ---------------------------------------------------------------------------
