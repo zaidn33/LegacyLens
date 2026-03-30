@@ -1,0 +1,81 @@
+.page {
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  border-bottom: 1px solid var(--border-primary);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-secondary);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.logo {
+  font-size: 1.6rem;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.tag {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  margin-left: var(--space-xs);
+}
+
+/* Main */
+.main {
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* Upload */
+.uploadSection {
+  animation: fade-in 0.4s ease forwards;
+}
+.error {
+  margin-top: var(--space-sm);
+  color: var(--status-failed);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Job List */
+.listSection {
+  padding: 0;
+  overflow: hidden;
+  animation: fade-in 0.4s ease 0.1s forwards;
+  opacity: 0;
+}
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-md) 0;
+}
+.listTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.listCount {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "stage": "coder",
+    "error_type": "ValidationError",
+    "message": "1 validation error for CoderOutput\ngenerated_code\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
+    "recoverable": true,
+    "iteration": 1
+  },
+  {
+    "stage": "coder",
+    "error_type": "ValidationError",
+    "message": "1 validation error for CoderOutput\ngenerated_code\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
+    "recoverable": true,
+    "iteration": 2
+  },
+  {
+    "stage": "coder",
+    "error_type": "ValidationError",
+    "message": "1 validation error for CoderOutput\ngenerated_code\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
+    "recoverable": true,
+    "iteration": 3
+  }
+]

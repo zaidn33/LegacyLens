@@ -1,0 +1,38 @@
+.card {
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
+  border-left: 3px solid transparent;
+}
+.critical { border-left-color: var(--severity-critical); background: var(--severity-critical-bg); }
+.major { border-left-color: var(--severity-major); background: var(--severity-major-bg); }
+.minor { border-left-color: var(--severity-minor); background: var(--severity-minor-bg); }
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+.severityBadge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.08);
+}
+.logicStep {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+.description {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.fix {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  margin-top: var(--space-xs);
+}

@@ -1,0 +1,182 @@
+/* =====================================================
+   LegacyLens — Global Styles
+   Dark-mode terminal aesthetic per PRD
+   ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ----- Design Tokens ----- */
+:root {
+  /* Surface palette */
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1a2236;
+  --bg-card: #151d2e;
+  --bg-card-hover: #1c2640;
+  --bg-input: #0d1321;
+
+  /* Border palette */
+  --border-primary: #1e2d4a;
+  --border-secondary: #2a3f6b;
+  --border-accent: #3b82f6;
+
+  /* Text palette */
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-accent: #60a5fa;
+
+  /* Status colors */
+  --status-completed: #22c55e;
+  --status-completed-bg: rgba(34, 197, 94, 0.12);
+  --status-error: #f59e0b;
+  --status-error-bg: rgba(245, 158, 11, 0.12);
+  --status-failed: #ef4444;
+  --status-failed-bg: rgba(239, 68, 68, 0.12);
+  --status-processing: #3b82f6;
+  --status-processing-bg: rgba(59, 130, 246, 0.12);
+  --status-pending: #64748b;
+  --status-pending-bg: rgba(100, 116, 139, 0.12);
+
+  /* Confidence colors */
+  --confidence-high: #22c55e;
+  --confidence-high-bg: rgba(34, 197, 94, 0.12);
+  --confidence-medium: #f59e0b;
+  --confidence-medium-bg: rgba(245, 158, 11, 0.12);
+  --confidence-low: #ef4444;
+  --confidence-low-bg: rgba(239, 68, 68, 0.12);
+
+  /* Severity colors */
+  --severity-critical: #ef4444;
+  --severity-critical-bg: rgba(239, 68, 68, 0.10);
+  --severity-major: #f59e0b;
+  --severity-major-bg: rgba(245, 158, 11, 0.10);
+  --severity-minor: #64748b;
+  --severity-minor-bg: rgba(100, 116, 139, 0.10);
+
+  /* Accent */
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
+
+/* ----- Reset & Base ----- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--text-accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+a:hover {
+  color: #93c5fd;
+}
+
+/* ----- Scrollbar ----- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3d5a9e;
+}
+
+/* ----- Utility Classes ----- */
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.card:hover {
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ----- Animations ----- */
+@keyframes pulse-blue {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease forwards;
+}
+
+.animate-pulse {
+  animation: pulse-blue 2s ease-in-out infinite;
+}

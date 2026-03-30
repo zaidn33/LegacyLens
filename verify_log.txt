@@ -1,0 +1,58 @@
+============================================================
+Phase 4 Verification
+============================================================
+
+[1] Next.js Version
+  Installed: next@16.2.1
+  PASS: Next.js version read
+
+[2] Job List - Pagination & Ordering
+  PASS: GET /jobs returns 200
+  PASS: Has total
+  PASS: page==1
+  PASS: limit==5
+  PASS: Has total_pages
+  PASS: Has jobs list
+  PASS: Newest-first order
+  PASS: Page 2 returns 200
+  PASS: Page 2 metadata
+
+[3] Artifact Endpoint
+  Test job: 5c74dedc... (completed)
+  PASS: Valid artifact -> 200
+  PASS: errors.json -> 200
+  PASS: Non-allowlisted -> 400
+  PASS: passwd -> 400
+  PASS: Path traversal ../ blocked (400 or 404)
+  PASS: Path traversal ..\ -> 400
+  PASS: Non-existent job -> 404
+
+  Testing 409 for in-progress job...
+  PASS: POST /jobs -> 200
+  PASS: Immediate artifact -> 409 or 200
+
+[4] Submit -> Poll -> Verify
+  PASS: Job detail -> 200
+  PASS: Terminal status
+  PASS: Has file_name
+  PASS: Has source_code
+  PASS: Has logic_map
+  PASS: Has coder_output
+  PASS: Has reviewer_output
+  PASS: Has final_confidence
+  PASS: Has errors field
+  PASS: 0 errors on success
+  PASS: Confidence level valid
+  PASS: Confidence has rationale
+  PASS: Reviewer has passed
+  PASS: Reviewer has defects
+
+[5] Job List Contains New Job
+  PASS: New job in list
+  PASS: Summary has confidence_level
+  PASS: Summary has has_errors
+  PASS: Summary has created_at
+
+============================================================
+Results: 37 passed, 0 failed out of 37
+============================================================

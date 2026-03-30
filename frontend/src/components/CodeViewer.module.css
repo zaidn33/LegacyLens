@@ -1,0 +1,32 @@
+.wrapper {
+  background: var(--bg-input);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.header {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.pre {
+  padding: var(--space-md);
+  margin: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+.lineNumber {
+  display: inline-block;
+  width: 3em;
+  text-align: right;
+  margin-right: 1em;
+  color: var(--text-muted);
+  user-select: none;
+  opacity: 0.5;
+}

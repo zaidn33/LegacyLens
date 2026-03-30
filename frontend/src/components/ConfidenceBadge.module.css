@@ -1,0 +1,11 @@
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.high { color: var(--confidence-high); background: var(--confidence-high-bg); }
+.medium { color: var(--confidence-medium); background: var(--confidence-medium-bg); }
+.low { color: var(--confidence-low); background: var(--confidence-low-bg); }
+.none { color: var(--text-muted); background: var(--bg-tertiary); }

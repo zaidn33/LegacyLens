@@ -1,0 +1,65 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--status-error);
+  margin-bottom: var(--space-xs);
+}
+.error {
+  border: 1px solid var(--border-primary);
+  border-left: 3px solid var(--status-failed);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--status-failed-bg);
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xs);
+}
+.stage {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-accent);
+  text-transform: uppercase;
+}
+.type {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.iteration {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+.recoverBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+.recoverable {
+  color: var(--status-error);
+  background: var(--status-error-bg);
+}
+.nonrecoverable {
+  color: var(--status-failed);
+  background: var(--status-failed-bg);
+}
+.message {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  font-family: var(--font-mono);
+  word-break: break-word;
+}

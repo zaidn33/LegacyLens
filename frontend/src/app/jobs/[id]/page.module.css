@@ -1,0 +1,204 @@
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top bar */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  height: 48px;
+}
+.backLink {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.jobId {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Panes */
+.paneInner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.paneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+.paneTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Content styles */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.bodyText {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  margin-bottom: var(--space-md);
+}
+.noData {
+  padding: var(--space-lg);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Review */
+.reviewContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.reviewMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.subHeading {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+.limitationList {
+  padding-left: var(--space-lg);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.limitationList li {
+  margin-bottom: var(--space-xs);
+}
+
+/* Confidence */
+.confidenceContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.confidenceLevel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+.iterCount {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* Missing stage */
+.missing {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+}
+.missingIcon {
+  font-size: 2rem;
+  margin-bottom: var(--space-sm);
+  opacity: 0.6;
+}
+.missingTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--status-error);
+  margin-bottom: var(--space-xs);
+}
+.missingText {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Processing state */
+.processingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl);
+  color: var(--text-secondary);
+}
+.errorText {
+  color: var(--status-failed);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* Spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-primary);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Loading page */
+.loadingPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: var(--space-md);
+  color: var(--text-secondary);
+}
+
+/* Mapping table */
+.mappingContent {
+  overflow-x: auto;
+}
+.mappingTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.mappingTable th {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-primary);
+}
+.mappingTable td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+}

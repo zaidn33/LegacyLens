@@ -1,0 +1,229 @@
+{
+  "logic_map": {
+    "executive_summary": "This module calculates monthly billing amounts for customer accounts based on usage tiers, applies late-payment penalties, and produces a billing summary record. It is a core component of the accounts receivable pipeline within a financial services billing system.",
+    "business_objective": "Calculate tiered monthly billing charges with late-payment penalties and output a formatted billing summary for downstream invoice generation.",
+    "inputs_and_outputs": {
+      "inputs": [
+        "CUSTOMER-RECORD: customer account details (ID, name, status, balance)",
+        "USAGE-RECORD: monthly usage amount in units",
+        "RATE-TABLE: tiered pricing structure (base rate, tier thresholds, tier rates)",
+        "PAYMENT-HISTORY: last payment date and amount"
+      ],
+      "outputs": [
+        "BILLING-SUMMARY: calculated charges, penalties, total due, billing date",
+        "ERROR-REPORT: validation failures written to error log file"
+      ],
+      "external_touchpoints": [
+        "CUSTOMER-FILE: sequential file read for customer records",
+        "RATE-FILE: indexed file read for rate table lookup",
+        "BILLING-OUTPUT: sequential file write for billing summaries",
+        "ERROR-LOG: sequential file write for error reporting"
+      ]
+    },
+    "logic_dictionary": [
+      {
+        "legacy_name": "WS-CUST-ID",
+        "proposed_modern_name": "customer_id",
+        "meaning": "Unique customer account identifier",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-CUST-NAME",
+        "proposed_modern_name": "customer_name",
+        "meaning": "Customer display name",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-CUST-STATUS",
+        "proposed_modern_name": "account_status",
+        "meaning": "Account status flag: A=Active, S=Suspended, C=Closed",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-USAGE-AMT",
+        "proposed_modern_name": "monthly_usage_units",
+        "meaning": "Usage quantity for the billing period",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-BASE-RATE",
+        "proposed_modern_name": "base_rate",
+        "meaning": "Base charge per unit for tier 1",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-TIER2-THRESHOLD",
+        "proposed_modern_name": "tier2_threshold",
+        "meaning": "Usage threshold above which tier 2 rate applies",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-TIER2-RATE",
+        "proposed_modern_name": "tier2_rate",
+        "meaning": "Rate per unit for usage above tier 2 threshold",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-TIER3-THRESHOLD",
+        "proposed_modern_name": "tier3_threshold",
+        "meaning": "Usage threshold above which tier 3 rate applies",
+        "confidence": "Medium"
+      },
+      {
+        "legacy_name": "WS-TIER3-RATE",
+        "proposed_modern_name": "tier3_rate",
+        "meaning": "Rate per unit for usage above tier 3 threshold",
+        "confidence": "Medium"
+      },
+      {
+        "legacy_name": "WS-LATE-FEE-PCT",
+        "proposed_modern_name": "late_fee_percentage",
+        "meaning": "Percentage penalty applied for overdue payments",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-DAYS-OVERDUE",
+        "proposed_modern_name": "days_overdue",
+        "meaning": "Number of days since last payment was due",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-TOTAL-DUE",
+        "proposed_modern_name": "total_amount_due",
+        "meaning": "Final calculated billing amount including penalties",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-BILLING-DT",
+        "proposed_modern_name": "billing_date",
+        "meaning": "Date the billing calculation was performed",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-ERR-CODE",
+        "proposed_modern_name": "error_code",
+        "meaning": "Numeric error identifier for validation failures",
+        "confidence": "Medium"
+      },
+      {
+        "legacy_name": "WS-ERR-MSG",
+        "proposed_modern_name": "error_message",
+        "meaning": "Human-readable error description",
+        "confidence": "Medium"
+      }
+    ],
+    "step_by_step_logic_flow": [
+      "1. Open input files (CUSTOMER-FILE, RATE-FILE) and output files (BILLING-OUTPUT, ERROR-LOG).",
+      "2. Read the RATE-TABLE to load tier thresholds and rates into working storage.",
+      "3. Read the next CUSTOMER-RECORD. If end-of-file, go to step 12.",
+      "4. Validate the customer record: check that CUST-ID is not empty, CUST-STATUS is 'A' (active). If validation fails, write to ERROR-LOG and go to step 3.",
+      "5. Read the corresponding USAGE-RECORD for this customer.",
+      "6. Calculate base charges: multiply usage units by base rate for units up to tier 2 threshold.",
+      "7. If usage exceeds tier 2 threshold, calculate tier 2 charges: multiply excess units (up to tier 3 threshold) by tier 2 rate.",
+      "8. If usage exceeds tier 3 threshold, calculate tier 3 charges: multiply excess units beyond tier 3 threshold by tier 3 rate.",
+      "9. Sum base + tier 2 + tier 3 charges into subtotal.",
+      "10. Check payment history: if days overdue > 30, apply late fee percentage to subtotal and add to total. If days overdue > 90, cap penalty at 25% of subtotal.",
+      "11. Write BILLING-SUMMARY record (customer ID, name, subtotal, penalty, total due, billing date) to BILLING-OUTPUT. Go to step 3.",
+      "12. Close all files. Write processing summary count to console. Stop."
+    ],
+    "business_rules": [
+      "Only active accounts (status = 'A') are billed; suspended and closed accounts are skipped with a log entry.",
+      "Billing uses three pricing tiers: base rate up to tier 2 threshold, tier 2 rate for usage between tier 2 and tier 3 thresholds, tier 3 rate for usage above tier 3 threshold.",
+      "Late payment penalty applies only when payment is overdue by more than 30 days.",
+      "Late penalty is calculated as: subtotal * late_fee_percentage.",
+      "Late penalty is capped at 25% of subtotal when payment is overdue by more than 90 days.",
+      "Customers with zero usage still receive a billing record with $0.00 charges.",
+      "Error records are logged but do not halt batch processing."
+    ],
+    "source_snippet_references": {},
+    "edge_cases": [
+      "Customer with exactly 0 usage units: should produce a $0.00 billing record, not be skipped.",
+      "Usage exactly at a tier boundary: the threshold value itself falls in the lower tier.",
+      "Days overdue exactly at 30: no penalty applied (penalty triggers at >30).",
+      "Days overdue exactly at 90: standard penalty applied, not the capped rate (cap triggers at >90).",
+      "Customer record with empty CUST-ID: validation failure, logged to error file.",
+      "Negative usage value: no explicit handling found in source; likely an unhandled edge case.",
+      "Rate table with zero rate values: charges compute to $0.00; no explicit guard."
+    ],
+    "dependencies": [
+      "CUSTOMER-FILE: sequential input file, record layout assumed from COPY CUSTOMER-RECORD",
+      "RATE-FILE: indexed input file containing tier pricing, layout assumed from COPY RATE-RECORD",
+      "BILLING-OUTPUT: sequential output file, layout defined in BILLING-SUMMARY",
+      "ERROR-LOG: sequential output file for error reporting",
+      "COPY CUSTOMER-RECORD: copybook not provided \u2014 field layout inferred from usage patterns",
+      "COPY RATE-RECORD: copybook not provided \u2014 field layout inferred from usage patterns"
+    ],
+    "critical_constraints": [
+      "Tier calculation order must be preserved: base -> tier 2 -> tier 3. Charges must never double-count units across tiers.",
+      "Late fee cap at 25% for >90 days overdue must not be removed during modernization.",
+      "Only active accounts may be billed. This is a compliance requirement, not just a filter.",
+      "Error logging must not halt the batch \u2014 processing continues with next record.",
+      "Billing date must be set to the actual processing date, not a hardcoded value."
+    ],
+    "assumptions_and_ambiguities": {
+      "observed": [
+        "Tier thresholds are loaded from RATE-FILE at program start and do not change during execution.",
+        "The program processes all customers in a single sequential pass.",
+        "Error records include the customer ID and a numeric error code."
+      ],
+      "inferred": [
+        "The 25% penalty cap appears to be a regulatory or compliance safeguard, though no comment explains the rationale.",
+        "COPY CUSTOMER-RECORD and COPY RATE-RECORD are standard copybooks \u2014 field layouts inferred from variable naming conventions."
+      ],
+      "unknown": [
+        "Whether negative usage values are possible in production data and how they should be handled.",
+        "Whether rate table can contain more than 3 tiers (the code only references 3).",
+        "The exact file path or JCL configuration for input/output files."
+      ]
+    },
+    "test_relevant_scenarios": [
+      "Active customer with usage in tier 1 only: verify base-rate calculation.",
+      "Active customer with usage spanning tiers 1 and 2: verify tier boundary math.",
+      "Active customer with usage spanning all 3 tiers: verify cumulative calculation.",
+      "Active customer with 0 usage: verify $0.00 record is produced.",
+      "Customer with status 'S' (suspended): verify record is skipped and logged.",
+      "Customer with status 'C' (closed): verify record is skipped and logged.",
+      "Customer with empty CUST-ID: verify error logging.",
+      "Payment 31 days overdue: verify penalty is applied.",
+      "Payment exactly 30 days overdue: verify no penalty.",
+      "Payment 91 days overdue: verify penalty is capped at 25%.",
+      "Payment exactly 90 days overdue: verify standard penalty (not capped).",
+      "Usage exactly at tier 2 threshold: verify boundary falls in lower tier.",
+      "Multiple customers processed: verify batch continues past errors."
+    ],
+    "confidence_assessment": {
+      "level": "Medium",
+      "rationale": "Core billing logic, tier calculations, and late-fee rules are well-supported by the source code structure and variable naming. However, two copybooks (CUSTOMER-RECORD, RATE-RECORD) are referenced but not provided, so field layouts are inferred. Negative usage handling and extensibility beyond 3 tiers remain unresolved."
+    }
+  },
+  "coder_output": null,
+  "reviewer_output": null,
+  "iterations": 3,
+  "final_confidence": {
+    "level": "Low",
+    "rationale": "Analyst confidence: Medium. Reviewer did not complete \u2014 confidence cannot be assessed. Pipeline ran 3 iteration(s) before failure."
+  },
+  "errors": [
+    {
+      "stage": "coder",
+      "error_type": "ValidationError",
+      "message": "1 validation error for CoderOutput\ngenerated_code\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
+      "recoverable": true,
+      "iteration": 1
+    },
+    {
+      "stage": "coder",
+      "error_type": "ValidationError",
+      "message": "1 validation error for CoderOutput\ngenerated_code\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
+      "recoverable": true,
+      "iteration": 2
+    },
+    {
+      "stage": "coder",
+      "error_type": "ValidationError",
+      "message": "1 validation error for CoderOutput\ngenerated_code\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing",
+      "recoverable": true,
+      "iteration": 3
+    }
+  ]
+}

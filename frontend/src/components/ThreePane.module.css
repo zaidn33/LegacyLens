@@ -1,0 +1,23 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  height: calc(100vh - 72px);
+  background: var(--border-primary);
+}
+.pane {
+  background: var(--bg-primary);
+  overflow: auto;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .pane {
+    min-height: 300px;
+    border-bottom: 1px solid var(--border-primary);
+  }
+}

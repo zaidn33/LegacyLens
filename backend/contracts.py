@@ -34,6 +34,29 @@ class DefectSeverity(str, Enum):
     MINOR = "minor"
 
 
+class PipelineError(BaseModel):
+    """Typed error container for pipeline stage failures.
+
+    Captures which stage failed, the exception type, whether the pipeline
+    can continue with partial output, and the iteration number if applicable.
+    """
+    stage: str = Field(
+        ..., description="Which agent failed: 'analyst', 'coder', 'reviewer', or 'scoring'"
+    )
+    error_type: str = Field(
+        ..., description="Exception class name, e.g. 'ValidationError'"
+    )
+    message: str = Field(
+        ..., description="Human-readable error description"
+    )
+    recoverable: bool = Field(
+        ..., description="True if the pipeline can continue with partial output"
+    )
+    iteration: int | None = Field(
+        default=None, description="Which coder/reviewer iteration failed (if applicable)"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Sub-models
 # ---------------------------------------------------------------------------
@@ -226,9 +249,18 @@ class ReviewerOutput(BaseModel):
 # ---------------------------------------------------------------------------
 
 class PipelineResult(BaseModel):
-    """Final output of the full Analyst → Coder → Reviewer pipeline."""
+    """Final output of the full Analyst → Coder → Reviewer pipeline.
+
+    iterations semantics:
+      0   = Analyst succeeded but pipeline failed before entering the Coder→Reviewer loop.
+      1-3 = At least one Coder→Reviewer iteration was attempted.
+    """
     logic_map: LogicMap
-    coder_output: CoderOutput
-    reviewer_output: ReviewerOutput
-    iterations: int = Field(..., ge=1, le=3, description="Number of Coder→Reviewer iterations")
+    coder_output: CoderOutput | None = None
+    reviewer_output: ReviewerOutput | None = None
+    iterations: int = Field(..., ge=0, le=3, description="Number of Coder→Reviewer iterations")
     final_confidence: ConfidenceAssessment
+    errors: list[PipelineError] = Field(
+        default_factory=list,
+        description="Typed errors from pipeline stage failures (empty on success)",
+    )

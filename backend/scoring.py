@@ -17,11 +17,14 @@ from .contracts import (
 
 def aggregate_confidence(
     logic_map: LogicMap,
-    reviewer_output: ReviewerOutput,
+    reviewer_output: ReviewerOutput | None,
     iterations: int,
 ) -> ConfidenceAssessment:
     """
     Compute a final confidence score from the pipeline stages.
+
+    If ``reviewer_output`` is None (reviewer never completed), returns a
+    Low confidence with an explanatory rationale.
 
     Logic:
     - Start from the reviewer's confidence level.
@@ -29,6 +32,17 @@ def aggregate_confidence(
     - Downgrade if multiple iterations were needed.
     - Downgrade if critical/major defects remain.
     """
+    # Guard: reviewer never completed → forced Low
+    if reviewer_output is None:
+        return ConfidenceAssessment(
+            level=ConfidenceLevel.LOW,
+            rationale=(
+                f"Analyst confidence: {logic_map.confidence_assessment.level.value}. "
+                "Reviewer did not complete — confidence cannot be assessed. "
+                f"Pipeline ran {iterations} iteration(s) before failure."
+            ),
+        )
+
     _order = {ConfidenceLevel.HIGH: 3, ConfidenceLevel.MEDIUM: 2, ConfidenceLevel.LOW: 1}
     _reverse = {3: ConfidenceLevel.HIGH, 2: ConfidenceLevel.MEDIUM, 1: ConfidenceLevel.LOW}
 

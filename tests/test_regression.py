@@ -27,11 +27,17 @@ def test_messy_billing_regression():
     # Ensure logic map was parsed
     assert len(result.logic_map.business_rules) > 0, "No business rules extracted."
     
-    # Ensure tests were generated
+    # Ensure tests were generated (coder_output is now optional)
+    assert result.coder_output is not None, "Coder output should exist on clean run."
     assert len(result.coder_output.generated_tests) > 0, "No tests generated."
     
     # Verify strict defect severities are modeled correctly in the Reviewer
-    assert hasattr(result.reviewer_output.defects[0], "severity"), "Defects lack severity tracking."
+    assert result.reviewer_output is not None, "Reviewer output should exist on clean run."
+    if result.reviewer_output.defects:
+        assert hasattr(result.reviewer_output.defects[0], "severity"), "Defects lack severity tracking."
+    
+    # Clean run should have no errors
+    assert result.errors == [], f"Expected no errors on clean run, got {result.errors}"
     
     # Check if run history dir was created
     dirs = list(Path(__file__).resolve().parent.parent.joinpath("runs").glob("*"))

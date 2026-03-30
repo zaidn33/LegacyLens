@@ -25,3 +25,10 @@ output/
 # OS
 .DS_Store
 Thumbs.db
+
+# SQLite database (regenerated on init)
+legacylens.db
+
+# Frontend
+frontend/node_modules/
+frontend/.next/

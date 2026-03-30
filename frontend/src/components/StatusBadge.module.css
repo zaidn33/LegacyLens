@@ -1,0 +1,39 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.completed {
+  color: var(--status-completed);
+  background: var(--status-completed-bg);
+}
+.completedwitherrors {
+  color: var(--status-error);
+  background: var(--status-error-bg);
+}
+.failed {
+  color: var(--status-failed);
+  background: var(--status-failed-bg);
+}
+.processing {
+  color: var(--status-processing);
+  background: var(--status-processing-bg);
+}
+.pending {
+  color: var(--status-pending);
+  background: var(--status-pending-bg);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-processing);
+  animation: pulse-blue 2s ease-in-out infinite;
+}
