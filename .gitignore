@@ -32,3 +32,8 @@ legacylens.db
 # Frontend
 frontend/node_modules/
 frontend/.next/
+
+# Environment Variables
+.env
+.env.local
+.env*.local

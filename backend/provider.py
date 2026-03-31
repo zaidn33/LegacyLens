@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import os
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -48,8 +51,12 @@ class GraniteProvider(LLMProvider):
         base_url: str | None = None,
         model: str = "granite-3.0-8b-instruct",
     ):
+        api_key = api_key or os.getenv("WATSONX_APIKEY")
+        project_id = os.getenv("WATSONX_PROJECT_ID")
+        url = os.getenv("WATSONX_URL")
+
         self.api_key = api_key or os.environ.get("GRANITE_API_KEY", "dummy-local-key")
-        self.base_url = base_url or os.environ.get("OPENAI_API_BASE", "http://localhost:11434/v1")
+        self.base_url = base_url or url or os.environ.get("OPENAI_API_BASE", "http://localhost:11434/v1")
         self.model = model
 
         try:
