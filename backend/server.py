@@ -29,7 +29,15 @@ from backend.analyst import AnalystAgent
 from backend.coder import CoderAgent
 from backend.reviewer import ReviewerAgent
 from backend.provider import MockProvider
-from backend.contracts import PipelineError
+from backend.contracts import (
+    PipelineError, 
+    PipelineResult, 
+    DiffResponse, 
+    CodeDelta, 
+    LogicMapDelta, 
+    ConfidenceDelta, 
+    DefectDelta
+)
 from backend import db
 
 
@@ -72,6 +80,8 @@ class JobStatusResponse(BaseModel):
     result: dict | None = None
     error: str | None = None
     errors: list[PipelineError] = Field(default_factory=list)
+    parent_job_id: str | None = None
+    run_version: int = 1
 
 
 class JobSummary(BaseModel):
@@ -84,6 +94,8 @@ class JobSummary(BaseModel):
     has_errors: bool = False
     created_at: str
     updated_at: str
+    parent_job_id: str | None = None
+    run_version: int = 1
 
 
 class JobListResponse(BaseModel):
@@ -127,7 +139,7 @@ _CONTENT_TYPES: dict[str, str] = {
 # Background pipeline runner
 # ---------------------------------------------------------------------------
 
-def _run_graph(job_id: str, source_code: str, file_name: str, dependencies_dict: dict[str, str] | None = None) -> None:
+def _run_graph(job_id: str, source_code: str, file_name: str, dependencies_dict: dict[str, str] | None = None, run_version: int = 1) -> None:
     """Executes the LangGraph pipeline in the background, persisting to DB."""
     db.update_job(job_id, status="processing")
 
@@ -143,6 +155,7 @@ def _run_graph(job_id: str, source_code: str, file_name: str, dependencies_dict:
         error=None,
         errors=[],
         dependencies_dict=deps,
+        run_version=run_version,
     )
 
     try:
@@ -215,9 +228,9 @@ def create_job(
                 submitted_files.append(dep.filename)
 
     job_id = str(uuid.uuid4())
-    db.create_job(job_id, file.filename or "unknown.cbl", source_code, submitted_files)
+    job = db.create_job(job_id, file.filename or "unknown.cbl", source_code, submitted_files)
 
-    background_tasks.add_task(_run_graph, job_id, source_code, file.filename or "unknown.cbl", dependencies_dict)
+    background_tasks.add_task(_run_graph, job_id, source_code, file.filename or "unknown.cbl", dependencies_dict, job["run_version"])
 
     return {"job_id": job_id, "status": "processing"}
 
@@ -264,6 +277,8 @@ def get_job_status(job_id: str) -> JobStatusResponse:
         result=result,
         error=job.get("error"),
         errors=errors,
+        parent_job_id=job.get("parent_job_id"),
+        run_version=job.get("run_version", 1),
     )
 
 
@@ -314,6 +329,111 @@ def get_artifact(job_id: str, name: str):
         return JSONResponse(content=json.loads(content) if content.strip() else {})
 
     return PlainTextResponse(content=content, media_type=content_type)
+
+
+@app.post("/api/v1/jobs/{job_id}/rerun", tags=["Jobs"])
+def rerun_job(job_id: str, background_tasks: BackgroundTasks) -> dict[str, str]:
+    """Re-run an existing job via a new child job with bumped run_version."""
+    original = db.get_job(job_id)
+    if not original:
+        raise HTTPException(status_code=404, detail="Original job not found")
+        
+    source_code = original["source_code"]
+    file_name = original["file_name"]
+    submitted = set(json.loads(original.get("submitted_files") or "[]"))
+    
+    new_job_id = str(uuid.uuid4())
+    job = db.create_job(
+        new_job_id, 
+        file_name, 
+        source_code, 
+        list(submitted),
+        parent_job_id=job_id
+    )
+
+    background_tasks.add_task(
+        _run_graph, 
+        new_job_id, 
+        source_code, 
+        file_name, 
+        {},  
+        job["run_version"]
+    )
+
+    return {"job_id": new_job_id, "status": "processing"}
+
+
+@app.get("/api/v1/jobs/{job_id}/history", tags=["Jobs"])
+def get_job_history(job_id: str):
+    """List all jobs in a given jobs lineage."""
+    history = db.get_job_history(job_id)
+    if not history:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {"history": [JobSummary(**j).model_dump() for j in history]}
+
+
+@app.get("/api/v1/jobs/{job_id}/diff/{other_job_id}", response_model=DiffResponse, tags=["Jobs"])
+def get_job_diff(job_id: str, other_job_id: str) -> DiffResponse:
+    job_a = db.get_pipeline_result(job_id)
+    job_b = db.get_pipeline_result(other_job_id)
+    
+    if not job_a or not job_b:
+        raise HTTPException(status_code=409, detail="One or both jobs have no pipeline result")
+        
+    a_res = PipelineResult.model_validate(job_a)
+    b_res = PipelineResult.model_validate(job_b)
+    
+    a_code = a_res.coder_output.generated_code if a_res.coder_output else ""
+    b_code = b_res.coder_output.generated_code if b_res.coder_output else ""
+    
+    a_lines = a_code.splitlines()
+    b_lines = b_code.splitlines()
+    
+    import difflib
+    matcher = difflib.SequenceMatcher(None, a_lines, b_lines)
+    
+    changed_lines = set()
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag != "equal":
+            for j in range(j1, j2):
+                changed_lines.add(j + 1)
+                
+    code_delta = CodeDelta(
+        lines_before=len(a_lines),
+        lines_after=len(b_lines),
+        changed_line_numbers=sorted(list(changed_lines)),
+        changed=(a_code != b_code)
+    )
+    
+    lm_changed = (a_res.logic_map.model_dump() != b_res.logic_map.model_dump())
+    lm_delta = LogicMapDelta(
+        changed=lm_changed,
+        details="Logic Map differed." if lm_changed else ""
+    )
+    
+    conf_changed = (a_res.final_confidence.level != b_res.final_confidence.level)
+    conf_delta = ConfidenceDelta(
+        old_level=a_res.final_confidence.level.value,
+        new_level=b_res.final_confidence.level.value,
+        changed=conf_changed
+    )
+    
+    a_defects = len(a_res.reviewer_output.defects) if a_res.reviewer_output else 0
+    b_defects = len(b_res.reviewer_output.defects) if b_res.reviewer_output else 0
+    defect_delta = DefectDelta(
+        old_count=a_defects,
+        new_count=b_defects,
+        changed=(a_defects != b_defects)
+    )
+    
+    return DiffResponse(
+        job_id_a=job_id,
+        job_id_b=other_job_id,
+        logic_map_delta=lm_delta,
+        code_delta=code_delta,
+        confidence_delta=conf_delta,
+        defect_delta=defect_delta
+    )
 
 
 # Need json import for artifact endpoint

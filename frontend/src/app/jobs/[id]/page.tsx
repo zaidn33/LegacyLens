@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef, use } from "react";
-import Link from "next/link";
-import { getJobStatus } from "@/lib/api";
-import type { JobStatusResponse } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { getJobStatus, getJobHistory, submitRerun, getJobDiff } from "@/lib/api";
+import type { JobStatusResponse, JobSummary, DiffResponse } from "@/lib/types";
 import ThreePane from "@/components/ThreePane";
 import TabPanel from "@/components/TabPanel";
 import CodeViewer from "@/components/CodeViewer";
@@ -12,6 +12,9 @@ import DefectCard from "@/components/DefectCard";
 import ErrorList from "@/components/ErrorList";
 import StatusBadge from "@/components/StatusBadge";
 import ConfidenceBadge from "@/components/ConfidenceBadge";
+import VersionHistory from "@/components/VersionHistory";
+import DiffViewer from "@/components/DiffViewer";
+import Link from "next/link";
 import styles from "./page.module.css";
 
 function StageMissing({ stage }: { stage: string }) {
@@ -33,8 +36,12 @@ export default function JobDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const [job, setJob] = useState<JobStatusResponse | null>(null);
+  const [history, setHistory] = useState<JobSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRerunning, setIsRerunning] = useState(false);
+  const [diffData, setDiffData] = useState<DiffResponse | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
@@ -61,7 +68,17 @@ export default function JobDetailPage({
       }
     }
 
+    async function fetchHistory() {
+      try {
+        const h = await getJobHistory(id);
+        if (!cancelled && h.history) {
+          setHistory(h.history);
+        }
+      } catch {}
+    }
+
     fetchJob();
+    fetchHistory();
     pollRef.current = setInterval(fetchJob, 2000);
 
     return () => {
@@ -69,6 +86,26 @@ export default function JobDetailPage({
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [id]);
+
+  async function handleRerun() {
+    try {
+      setIsRerunning(true);
+      const res = await submitRerun(id);
+      router.push(`/jobs/${res.job_id}`);
+    } catch (e) {
+      alert("Failed to rerun: " + e);
+      setIsRerunning(false);
+    }
+  }
+
+  async function handleCompare(otherJobId: string) {
+    try {
+      const d = await getJobDiff(id, otherJobId);
+      setDiffData(d);
+    } catch (e: any) {
+      alert("Failed to compute diff: " + e.message);
+    }
+  }
 
   if (loading) {
     return (
@@ -115,6 +152,14 @@ export default function JobDetailPage({
       id: "logicmap",
       label: "Logic Map",
       content: <LogicMapView logicMap={result.logic_map} />,
+    });
+  }
+
+  if (history.length > 1) {
+    centerTabs.push({
+      id: "versions",
+      label: `History (${history.length})`,
+      content: <VersionHistory currentJobId={id} history={history} onCompare={handleCompare} />,
     });
   }
 
@@ -333,13 +378,26 @@ export default function JobDetailPage({
     <div className={styles.page}>
       {/* Top bar */}
       <header className={styles.topBar}>
-        <Link href="/" className={styles.backLink}>
-          ← Dashboard
-        </Link>
-        <span className={styles.jobId}>Job: {id.slice(0, 8)}...</span>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <Link href="/" className={styles.backLink}>
+            ← Dashboard
+          </Link>
+          <span className={styles.jobId}>Job: {id.slice(0, 8)}...</span>
+        </div>
+        <button 
+          className={styles.rerunBtn} 
+          onClick={handleRerun} 
+          disabled={isRerunning || job.status === "processing" || job.status === "pending"}
+        >
+          {isRerunning ? "Queuing Rerun..." : "♻️ Re-run Pipeline"}
+        </button>
       </header>
 
       <ThreePane left={leftPane} center={centerPane} right={rightPane} />
+      
+      {diffData && (
+        <DiffViewer diff={diffData} onClose={() => setDiffData(null)} />
+      )}
     </div>
   );
 }

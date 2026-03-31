@@ -69,6 +69,16 @@ def init_db(db_path: Path | str = DB_PATH) -> None:
         except sqlite3.OperationalError:
             pass  # Column already exists
 
+        # Additive migration for Phase 7: Lineage & Versioning
+        try:
+            conn.execute("ALTER TABLE jobs ADD COLUMN parent_job_id TEXT")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE jobs ADD COLUMN run_version INTEGER NOT NULL DEFAULT 1")
+        except sqlite3.OperationalError:
+            pass
+
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS pipeline_results (
                 job_id           TEXT PRIMARY KEY REFERENCES jobs(id),
@@ -110,6 +120,7 @@ def create_job(
     file_name: str,
     source_code: str,
     submitted_files: list[str] | None = None,
+    parent_job_id: str | None = None,
     *,
     db_path: Path | str = DB_PATH,
 ) -> dict[str, Any]:
@@ -120,10 +131,25 @@ def create_job(
     now = _now_iso()
     conn = _get_connection(db_path)
     try:
+        run_version = 1
+        if parent_job_id:
+            parent_row = conn.execute("SELECT parent_job_id FROM jobs WHERE id = ?", (parent_job_id,)).fetchone()
+            if not parent_row:
+                raise ValueError(f"Parent job {parent_job_id} not found")
+            
+            resolved_root = parent_row["parent_job_id"] or parent_job_id
+            parent_job_id = resolved_root
+            
+            max_ver_row = conn.execute(
+                "SELECT MAX(run_version) as max_v FROM jobs WHERE id = ? OR parent_job_id = ?", 
+                (resolved_root, resolved_root)
+            ).fetchone()
+            run_version = (max_ver_row["max_v"] or 0) + 1
+
         conn.execute(
-            """INSERT INTO jobs (id, file_name, source_code, status, created_at, updated_at, submitted_files)
-               VALUES (?, ?, ?, 'pending', ?, ?, ?)""",
-            (job_id, file_name, source_code, now, now, json.dumps(submitted_files)),
+            """INSERT INTO jobs (id, file_name, source_code, status, created_at, updated_at, submitted_files, parent_job_id, run_version)
+               VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
+            (job_id, file_name, source_code, now, now, json.dumps(submitted_files), parent_job_id, run_version),
         )
         conn.commit()
         return get_job(job_id, db_path=db_path)
@@ -170,6 +196,7 @@ def list_jobs(
         total = conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
         rows = conn.execute(
             """SELECT j.id, j.file_name, j.status, j.iteration, j.created_at, j.updated_at,
+                      j.parent_job_id, j.run_version,
                       pr.confidence_level, pr.has_errors
                FROM jobs j
                LEFT JOIN pipeline_results pr ON pr.job_id = j.id
@@ -189,6 +216,8 @@ def list_jobs(
                 "has_errors": bool(r["has_errors"]) if r["has_errors"] is not None else False,
                 "created_at": r["created_at"],
                 "updated_at": r["updated_at"],
+                "parent_job_id": r["parent_job_id"],
+                "run_version": r["run_version"],
             })
 
         return {
@@ -222,9 +251,53 @@ def update_job(
         conn.close()
 
 
+def get_job_history(
+    job_id: str,
+    *,
+    db_path: Path | str = DB_PATH,
+) -> list[dict[str, Any]]:
+    """Return all jobs in a given lineage, ordered by run_version ASC."""
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute("SELECT id, parent_job_id FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        if not row:
+            return []
+            
+        root_id = row["parent_job_id"] or row["id"]
+        
+        rows = conn.execute(
+            """SELECT j.id as job_id, j.file_name, j.status, j.iteration, j.created_at, j.updated_at,
+                      j.parent_job_id, j.run_version,
+                      pr.confidence_level, pr.has_errors
+               FROM jobs j
+               LEFT JOIN pipeline_results pr ON pr.job_id = j.id
+               WHERE j.id = ? OR j.parent_job_id = ?
+               ORDER BY j.run_version ASC""",
+            (root_id, root_id)
+        ).fetchall()
+        
+        jobs = []
+        for r in rows:
+            jobs.append({
+                "job_id": r["job_id"],
+                "file_name": r["file_name"],
+                "status": r["status"],
+                "confidence_level": r["confidence_level"],
+                "iterations": r["iteration"],
+                "has_errors": bool(r["has_errors"]) if r["has_errors"] is not None else False,
+                "created_at": r["created_at"],
+                "updated_at": r["updated_at"],
+                "parent_job_id": r["parent_job_id"],
+                "run_version": r["run_version"],
+            })
+        return jobs
+    finally:
+        conn.close()
+
 # ---------------------------------------------------------------------------
 # Pipeline results
 # ---------------------------------------------------------------------------
+
 
 def save_pipeline_result(
     job_id: str,

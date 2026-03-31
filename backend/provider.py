@@ -131,24 +131,27 @@ class MockProvider(LLMProvider):
         if self._mock_response is not None:
             return self._mock_response
 
-        # Route based on system prompt identity
+        import re
+        m = re.search(r"run_version=(\d+)", user_prompt)
+        run_version = int(m.group(1)) if m else 1
+
         # Route based on system prompt identity
         if "Legacy Logic Architect" in system_prompt:
             is_multi_file = "Auxiliary Dependency Files Provided" in user_prompt
-            return self._analyst_response(is_multi_file)
+            return self._analyst_response(is_multi_file, run_version)
         elif "Coder Agent" in system_prompt:
-            return self._coder_response()
+            return self._coder_response(run_version)
         elif "Reviewer Agent" in system_prompt:
-            return self._reviewer_response()
+            return self._reviewer_response(run_version)
         else:
-            return self._analyst_response(False)  # fallback
+            return self._analyst_response(False, run_version)  # fallback
 
     # ------------------------------------------------------------------
     # Analyst mock
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _analyst_response(is_multi_file: bool = False) -> dict:
+    def _analyst_response(is_multi_file: bool = False, run_version: int = 1) -> dict:
         """Realistic Logic Map for the sample COBOL billing module."""
         return {
             "executive_summary": (
@@ -423,9 +426,14 @@ class MockProvider(LLMProvider):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _coder_response() -> dict:
+    def _coder_response(run_version: int = 1) -> dict:
         """Realistic Coder output for the billing module."""
-        generated_code = '''\
+        
+        prefix = ""
+        if run_version > 1:
+            prefix = f'# Modifying logic for run version {run_version}\n\n'
+            
+        generated_code = prefix + '''\
 """
 Billing Calculator — modernized from COBOL BILL-CALC.
 
@@ -860,8 +868,8 @@ class TestEdgeCases:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _reviewer_response() -> dict:
-        """Realistic Reviewer output — passes on first review."""
+    def _reviewer_response(run_version: int = 1) -> dict:
+        """Realistic Reviewer output for the generated Coder output."""
         return {
             "logic_parity_findings": (
                 "The generated code correctly implements all five critical "

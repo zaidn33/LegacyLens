@@ -34,12 +34,15 @@ class AnalystAgent:
         self, 
         source_code: str, 
         file_name: str = "source.cbl", 
-        dependencies_dict: dict[str, str] | None = None
+        dependencies_dict: dict[str, str] | None = None,
+        run_version: int = 1
     ) -> LogicMap:
         """
         Analyze a raw legacy source string.
         """
         user_prompt = build_user_prompt(source_code, file_name, dependencies_dict=dependencies_dict)
+        if run_version > 1:
+            user_prompt += f"\n\n[System Runtime Context: run_version={run_version}]"
         schema = LogicMap.model_json_schema()
 
         raw_response = self.provider.generate(

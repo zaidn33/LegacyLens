@@ -271,3 +271,40 @@ class PipelineResult(BaseModel):
         default_factory=list,
         description="Typed errors from pipeline stage failures (empty on success)",
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — Diff Response Models
+# ---------------------------------------------------------------------------
+
+class ConfidenceDelta(BaseModel):
+    old_level: str | None = None
+    new_level: str | None = None
+    changed: bool = False
+
+
+class CodeDelta(BaseModel):
+    lines_before: int = 0
+    lines_after: int = 0
+    changed_line_numbers: list[int] = Field(default_factory=list)
+    changed: bool = False
+
+
+class DefectDelta(BaseModel):
+    old_count: int = 0
+    new_count: int = 0
+    changed: bool = False
+
+
+class LogicMapDelta(BaseModel):
+    changed: bool = False
+    details: str = Field(default="", description="High-level description of what changed in the logic map")
+
+
+class DiffResponse(BaseModel):
+    job_id_a: str
+    job_id_b: str
+    logic_map_delta: LogicMapDelta
+    code_delta: CodeDelta
+    confidence_delta: ConfidenceDelta
+    defect_delta: DefectDelta

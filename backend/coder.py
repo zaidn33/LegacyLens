@@ -87,6 +87,7 @@ class CoderAgent:
         logic_map: LogicMap,
         reviewer_feedback: ReviewerOutput | None = None,
         iteration: int = 1,
+        run_version: int = 1,
     ) -> CoderOutput:
         """
         Generate Python code from the Logic Map.
@@ -102,6 +103,8 @@ class CoderAgent:
         user_prompt = _build_coder_user_prompt(
             logic_map, reviewer_feedback, iteration
         )
+        if run_version > 1:
+            user_prompt += f"\n\n[System Runtime Context: run_version={run_version}]"
         schema = CoderOutput.model_json_schema()
 
         raw = self.provider.generate(

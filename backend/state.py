@@ -27,3 +27,4 @@ class PipelineState(TypedDict):
     error: str | None
     errors: list[PipelineError]
     dependencies_dict: dict[str, str]
+    run_version: int

@@ -72,6 +72,7 @@ class ReviewerAgent:
         self,
         logic_map: LogicMap,
         coder_output: CoderOutput,
+        run_version: int = 1,
     ) -> ReviewerOutput:
         """
         Review generated code against the Logic Map.
@@ -82,6 +83,8 @@ class ReviewerAgent:
             If the LLM response doesn't match the ReviewerOutput schema.
         """
         user_prompt = _build_reviewer_user_prompt(logic_map, coder_output)
+        if run_version > 1:
+            user_prompt += f"\n\n[System Runtime Context: run_version={run_version}]"
         schema = ReviewerOutput.model_json_schema()
 
         raw = self.provider.generate(

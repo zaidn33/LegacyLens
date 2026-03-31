@@ -62,7 +62,8 @@ def build_pipeline_graph(
             logic_map = analyst.analyze_source(
                 state["source_code"],
                 state.get("file_name", "source.cbl"),
-                dependencies_dict=state.get("dependencies_dict")
+                dependencies_dict=state.get("dependencies_dict"),
+                run_version=state.get("run_version", 1)
             )
             return {"logic_map": logic_map}
         except Exception as e:
@@ -79,6 +80,7 @@ def build_pipeline_graph(
                 logic_map=state["logic_map"],
                 reviewer_feedback=state.get("reviewer_output"),
                 iteration=iteration,
+                run_version=state.get("run_version", 1)
             )
             return {"coder_output": coder_output, "iterations": iteration}
         except ValidationError as e:
@@ -101,6 +103,7 @@ def build_pipeline_graph(
             reviewer_output = reviewer.review(
                 logic_map=state["logic_map"],
                 coder_output=state["coder_output"],
+                run_version=state.get("run_version", 1)
             )
             return {"reviewer_output": reviewer_output}
         except ValidationError as e:

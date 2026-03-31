@@ -104,6 +104,8 @@ export interface JobStatusResponse {
   result: PipelineResult | null;
   error: string | null;
   errors: PipelineError[];
+  parent_job_id: string | null;
+  run_version: number;
 }
 
 export interface JobSummary {
@@ -115,6 +117,8 @@ export interface JobSummary {
   has_errors: boolean;
   created_at: string;
   updated_at: string;
+  parent_job_id: string | null;
+  run_version: number;
 }
 
 export interface JobListResponse {
@@ -123,4 +127,37 @@ export interface JobListResponse {
   page: number;
   limit: number;
   total_pages: number;
+}
+
+export interface ConfidenceDelta {
+  old_level: string | null;
+  new_level: string | null;
+  changed: boolean;
+}
+
+export interface CodeDelta {
+  lines_before: number;
+  lines_after: number;
+  changed_line_numbers: number[];
+  changed: boolean;
+}
+
+export interface DefectDelta {
+  old_count: number;
+  new_count: number;
+  changed: boolean;
+}
+
+export interface LogicMapDelta {
+  changed: boolean;
+  details: string;
+}
+
+export interface DiffResponse {
+  job_id_a: string;
+  job_id_b: string;
+  logic_map_delta: LogicMapDelta;
+  code_delta: CodeDelta;
+  confidence_delta: ConfidenceDelta;
+  defect_delta: DefectDelta;
 }
