@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -35,8 +37,88 @@ ALLOWED_ARTIFACTS = frozenset({
 # Connection & schema init
 # ---------------------------------------------------------------------------
 
-def _get_connection(db_path: Path | str = DB_PATH) -> sqlite3.Connection:
-    """Open a connection with WAL mode and foreign keys enabled."""
+USE_TURSO = os.environ.get("USE_TURSO", "false").lower() == "true"
+TURSO_DATABASE_URL = os.environ.get("TURSO_DATABASE_URL")
+TURSO_AUTH_TOKEN = os.environ.get("TURSO_AUTH_TOKEN")
+
+class _DictRow(dict):
+    def __init__(self, cols, vals):
+        super().__init__(zip(cols, vals))
+        self._vals = vals
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._vals[key]
+        return super().__getitem__(key)
+
+class _TursoCursor:
+    def __init__(self, rs):
+        self.rs = rs
+        self.idx = 0
+    def fetchone(self):
+        if not self.rs or self.idx >= len(self.rs.rows):
+            return None
+        row = self.rs.rows[self.idx]
+        self.idx += 1
+        return _DictRow(self.rs.columns, row)
+    def fetchall(self):
+        if not self.rs:
+            return []
+        return [_DictRow(self.rs.columns, row) for row in self.rs.rows]
+
+class _TursoWrapper:
+    def __init__(self, client):
+        self.client = client
+        self._closed = False
+        
+    def execute(self, sql, params=()):
+        if self._closed:
+            raise sqlite3.ProgrammingError("Cannot operate on a closed database.")
+        try:
+            rs = self.client.execute(sql, params)
+            return _TursoCursor(rs)
+        except Exception as e:
+            err_str = str(e).lower()
+            if "unique constraint failed" in err_str:
+                raise sqlite3.IntegrityError(str(e))
+            if "duplicate column name" in err_str or "already exists" in err_str:
+                raise sqlite3.OperationalError(str(e))
+            raise
+
+    def executescript(self, sql):
+        stmts = [s.strip() for s in sql.split(";") if s.strip()]
+        if stmts:
+            self.client.batch(stmts)
+        return self
+
+    def commit(self):
+        pass
+        
+    def close(self):
+        if not self._closed:
+            self.client.close()
+            self._closed = True
+
+def _get_connection(db_path: Path | str = DB_PATH):
+    """Open a connection using either Turso or local SQLite with fallback."""
+    if USE_TURSO:
+        if not TURSO_DATABASE_URL:
+            # We explicitly want Turso, but URL is missing -> fail fast
+            raise ValueError("USE_TURSO is true but TURSO_DATABASE_URL is not set.")
+        
+        import libsql_client
+        try:
+            client = libsql_client.create_client_sync(
+                url=TURSO_DATABASE_URL,
+                auth_token=TURSO_AUTH_TOKEN
+            )
+            # Test connection
+            client.execute("SELECT 1")
+            return _TursoWrapper(client)
+        except Exception as e:
+            # Deliberate failure: if USE_TURSO=true and it fails, DO NOT MUTELY FALL-BACK TO REST. Fail fast.
+            raise RuntimeError(f"Failed to connect to Turso database: {e}")
+
+    # Fallback / Local mode
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
