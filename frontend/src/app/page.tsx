@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { submitJob, listJobs } from "@/lib/api";
+import { submitJob, listJobs, logoutUser, AuthError } from "@/lib/api";
 import type { JobSummary } from "@/lib/types";
 import FileUpload from "@/components/FileUpload";
 import JobTable from "@/components/JobTable";
@@ -20,8 +20,10 @@ export default function DashboardPage() {
     try {
       const data = await listJobs(1, 50);
       setJobs(data.jobs);
-    } catch {
-      // Silently ignore fetch errors during polling
+    } catch (e) {
+      if (e instanceof AuthError) {
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
     }
   }, []);
 
@@ -50,13 +52,18 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.logo}>◈</span>
           <h1 className={styles.title}>LegacyLens</h1>
           <span className={styles.tag}>Agentic Code Modernization</span>
         </div>
+        <button 
+          onClick={() => logoutUser()} 
+          style={{ background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          Logout
+        </button>
       </header>
 
       <main className={`container ${styles.main}`}>

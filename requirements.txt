@@ -8,3 +8,6 @@ langchain-core
 langchain-openai
 httpx
 tenacity
+python-jose
+passlib[bcrypt]
+bcrypt

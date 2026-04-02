@@ -5,6 +5,11 @@ from backend.server import app
 client = TestClient(app)
 
 def test_phase7_lineage_and_diff():
+    # 0. Setup Auth
+    client.post("/api/v1/auth/register", json={"username": "testuser", "password": "password"})
+    login_resp = client.post("/api/v1/auth/login", data={"username": "testuser", "password": "password"})
+    assert login_resp.status_code == 200
+
     # 1. Create a parent job
     response = client.post(
         "/api/v1/jobs",

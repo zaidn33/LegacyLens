@@ -13,10 +13,12 @@ from typing import Any
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query, Depends, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel, Field
+import os
 
 # Suppress Pydantic / Langchain warnings for cleaner output
 warnings.filterwarnings("ignore", message=".*Pydantic V1.*")
@@ -39,6 +41,7 @@ from backend.contracts import (
     DefectDelta
 )
 from backend import db
+from backend.auth import get_password_hash, verify_password, create_access_token, get_current_user
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +49,22 @@ from backend import db
 # ---------------------------------------------------------------------------
 
 app = FastAPI(title="LegacyLens Pipeline API", version="2.0.0")
+
+@app.on_event("startup")
+def startup_event():
+    admin_user = os.getenv("ADMIN_USERNAME")
+    admin_pass = os.getenv("ADMIN_PASSWORD")
+    if admin_user and admin_pass:
+        conn = db._get_connection()
+        try:
+            count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            if count == 0:
+                print(f"Seeding admin user '{admin_user}'...")
+                db.create_user(str(uuid.uuid4()), admin_user, get_password_hash(admin_pass))
+        except Exception as e:
+            print(f"Seed failed: {e}")
+        finally:
+            conn.close()
 
 # CORS — allow the Next.js dev server
 app.add_middleware(
@@ -200,14 +219,60 @@ def _run_graph(job_id: str, source_code: str, file_name: str, dependencies_dict:
 
 
 # ---------------------------------------------------------------------------
-# Endpoints
+# Auth Endpoints
+# ---------------------------------------------------------------------------
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/v1/auth/register", tags=["Auth"])
+def register(req: RegisterRequest):
+    if db.get_user_by_username(req.username):
+        raise HTTPException(status_code=400, detail="Username already registered")
+    hashed = get_password_hash(req.password)
+    user_id = str(uuid.uuid4())
+    db.create_user(user_id, req.username, hashed)
+    return {"status": "ok"}
+
+@app.post("/api/v1/auth/login", tags=["Auth"])
+def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
+    user = db.get_user_by_username(form_data.username)
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
+    token = create_access_token({"sub": user["id"], "username": user["username"]})
+    
+    # HttpOnly Cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        secure=False,  # Set to False to permit localhost dev HTTP. Overridable in production.
+    )
+    return {"status": "ok"}
+
+@app.post("/api/v1/auth/logout", tags=["Auth"])
+def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"status": "ok"}
+
+@app.get("/api/v1/auth/me", tags=["Auth"])
+def get_me(current_user: dict = Depends(get_current_user)):
+    return {"username": current_user["username"], "id": current_user["id"]}
+
+
+# ---------------------------------------------------------------------------
+# Jobs Endpoints
 # ---------------------------------------------------------------------------
 
 @app.post("/api/v1/jobs", tags=["Jobs"])
 def create_job(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    dependencies: list[UploadFile] = File(default=[])
+    dependencies: list[UploadFile] = File(default=[]),
+    current_user: dict = Depends(get_current_user)
 ) -> dict[str, str]:
     """Submit a primary COBOL file and optional dependencies to spawn a metadata job."""
     content = file.file.read()
@@ -228,7 +293,7 @@ def create_job(
                 submitted_files.append(dep.filename)
 
     job_id = str(uuid.uuid4())
-    job = db.create_job(job_id, file.filename or "unknown.cbl", source_code, submitted_files)
+    job = db.create_job(job_id, file.filename or "unknown.cbl", source_code, current_user["id"], submitted_files)
 
     background_tasks.add_task(_run_graph, job_id, source_code, file.filename or "unknown.cbl", dependencies_dict, job["run_version"])
 
@@ -239,9 +304,10 @@ def create_job(
 def list_jobs(
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    current_user: dict = Depends(get_current_user)
 ) -> JobListResponse:
     """List all jobs, paginated, newest-first."""
-    data = db.list_jobs(page=page, limit=limit)
+    data = db.list_jobs(current_user["id"], page=page, limit=limit)
     return JobListResponse(
         jobs=[JobSummary(**j) for j in data["jobs"]],
         total=data["total"],
@@ -252,9 +318,9 @@ def list_jobs(
 
 
 @app.get("/api/v1/jobs/{job_id}", response_model=JobStatusResponse, tags=["Jobs"])
-def get_job_status(job_id: str) -> JobStatusResponse:
+def get_job_status(job_id: str, current_user: dict = Depends(get_current_user)) -> JobStatusResponse:
     """Poll the status or full result of a job."""
-    job = db.get_job(job_id)
+    job = db.get_job(job_id, current_user["id"])
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -283,7 +349,7 @@ def get_job_status(job_id: str) -> JobStatusResponse:
 
 
 @app.get("/api/v1/jobs/{job_id}/artifacts/{name}", tags=["Artifacts"])
-def get_artifact(job_id: str, name: str):
+def get_artifact(job_id: str, name: str, current_user: dict = Depends(get_current_user)):
     """Retrieve a specific artifact file from a job's run history.
 
     Only filenames in the allowlist may be requested.  Path traversal
@@ -300,7 +366,7 @@ def get_artifact(job_id: str, name: str):
             detail=f"Unknown artifact '{name}'. Allowed: {sorted(db.ALLOWED_ARTIFACTS)}",
         )
 
-    job = db.get_job(job_id)
+    job = db.get_job(job_id, current_user["id"])
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -332,9 +398,9 @@ def get_artifact(job_id: str, name: str):
 
 
 @app.post("/api/v1/jobs/{job_id}/rerun", tags=["Jobs"])
-def rerun_job(job_id: str, background_tasks: BackgroundTasks) -> dict[str, str]:
+def rerun_job(job_id: str, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)) -> dict[str, str]:
     """Re-run an existing job via a new child job with bumped run_version."""
-    original = db.get_job(job_id)
+    original = db.get_job(job_id, current_user["id"])
     if not original:
         raise HTTPException(status_code=404, detail="Original job not found")
         
@@ -347,6 +413,7 @@ def rerun_job(job_id: str, background_tasks: BackgroundTasks) -> dict[str, str]:
         new_job_id, 
         file_name, 
         source_code, 
+        current_user["id"],
         list(submitted),
         parent_job_id=job_id
     )
@@ -364,16 +431,21 @@ def rerun_job(job_id: str, background_tasks: BackgroundTasks) -> dict[str, str]:
 
 
 @app.get("/api/v1/jobs/{job_id}/history", tags=["Jobs"])
-def get_job_history(job_id: str):
+def get_job_history(job_id: str, current_user: dict = Depends(get_current_user)):
     """List all jobs in a given jobs lineage."""
-    history = db.get_job_history(job_id)
+    history = db.get_job_history(job_id, current_user["id"])
     if not history:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"history": [JobSummary(**j).model_dump() for j in history]}
 
 
 @app.get("/api/v1/jobs/{job_id}/diff/{other_job_id}", response_model=DiffResponse, tags=["Jobs"])
-def get_job_diff(job_id: str, other_job_id: str) -> DiffResponse:
+def get_job_diff(job_id: str, other_job_id: str, current_user: dict = Depends(get_current_user)) -> DiffResponse:
+    job1 = db.get_job(job_id, current_user["id"])
+    job2 = db.get_job(other_job_id, current_user["id"])
+    if not job1 or not job2:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
     job_a = db.get_pipeline_result(job_id)
     job_b = db.get_pipeline_result(other_job_id)
     

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
-import { getJobStatus, getJobHistory, submitRerun, getJobDiff } from "@/lib/api";
+import { getJobStatus, getJobHistory, submitRerun, getJobDiff, logoutUser, AuthError } from "@/lib/api";
 import type { JobStatusResponse, JobSummary, DiffResponse } from "@/lib/types";
 import ThreePane from "@/components/ThreePane";
 import TabPanel from "@/components/TabPanel";
@@ -63,8 +63,13 @@ export default function JobDetailPage({
             if (pollRef.current) clearInterval(pollRef.current);
           }
         }
-      } catch {
-        if (!cancelled) setLoading(false);
+      } catch (e) {
+        if (e instanceof AuthError) {
+          cancelled = true;
+          if (pollRef.current) clearInterval(pollRef.current);
+        } else if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
@@ -74,7 +79,12 @@ export default function JobDetailPage({
         if (!cancelled && h.history) {
           setHistory(h.history);
         }
-      } catch {}
+      } catch (e) {
+        if (e instanceof AuthError) {
+          cancelled = true;
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      }
     }
 
     fetchJob();
@@ -384,13 +394,21 @@ export default function JobDetailPage({
           </Link>
           <span className={styles.jobId}>Job: {id.slice(0, 8)}...</span>
         </div>
-        <button 
-          className={styles.rerunBtn} 
-          onClick={handleRerun} 
-          disabled={isRerunning || job.status === "processing" || job.status === "pending"}
-        >
-          {isRerunning ? "Queuing Rerun..." : "♻️ Re-run Pipeline"}
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button 
+            className={styles.rerunBtn} 
+            onClick={handleRerun} 
+            disabled={isRerunning || job.status === "processing" || job.status === "pending"}
+          >
+            {isRerunning ? "Queuing Rerun..." : "♻️ Re-run Pipeline"}
+          </button>
+          <button 
+            onClick={() => logoutUser()} 
+            style={{ background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Logout
+          </button>
+        </div>
       </header>
 
       <ThreePane left={leftPane} center={centerPane} right={rightPane} />

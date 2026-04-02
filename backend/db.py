@@ -49,6 +49,13 @@ def init_db(db_path: Path | str = DB_PATH) -> None:
     conn = _get_connection(db_path)
     try:
         conn.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                id              TEXT PRIMARY KEY,
+                username        TEXT UNIQUE NOT NULL,
+                hashed_password TEXT NOT NULL,
+                created_at      TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS jobs (
                 id              TEXT PRIMARY KEY,
                 file_name       TEXT NOT NULL,
@@ -76,6 +83,12 @@ def init_db(db_path: Path | str = DB_PATH) -> None:
             pass
         try:
             conn.execute("ALTER TABLE jobs ADD COLUMN run_version INTEGER NOT NULL DEFAULT 1")
+        except sqlite3.OperationalError:
+            pass
+
+        # Additive migration for Phase 8: Authentication
+        try:
+            conn.execute("ALTER TABLE jobs ADD COLUMN user_id TEXT REFERENCES users(id)")
         except sqlite3.OperationalError:
             pass
 
@@ -112,6 +125,34 @@ def _now_iso() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Users CRUD
+# ---------------------------------------------------------------------------
+
+def create_user(user_id: str, username: str, hashed_password: str, *, db_path: Path | str = DB_PATH) -> dict[str, Any]:
+    now = _now_iso()
+    conn = _get_connection(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO users (id, username, hashed_password, created_at) VALUES (?, ?, ?, ?)",
+            (user_id, username, hashed_password, now)
+        )
+        conn.commit()
+        return get_user_by_username(username, db_path=db_path)
+    except sqlite3.IntegrityError:
+        raise ValueError("Username already exists")
+    finally:
+        conn.close()
+
+def get_user_by_username(username: str, *, db_path: Path | str = DB_PATH) -> dict[str, Any] | None:
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
 # Jobs CRUD
 # ---------------------------------------------------------------------------
 
@@ -119,6 +160,7 @@ def create_job(
     job_id: str,
     file_name: str,
     source_code: str,
+    user_id: str,
     submitted_files: list[str] | None = None,
     parent_job_id: str | None = None,
     *,
@@ -147,27 +189,28 @@ def create_job(
             run_version = (max_ver_row["max_v"] or 0) + 1
 
         conn.execute(
-            """INSERT INTO jobs (id, file_name, source_code, status, created_at, updated_at, submitted_files, parent_job_id, run_version)
-               VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
-            (job_id, file_name, source_code, now, now, json.dumps(submitted_files), parent_job_id, run_version),
+            """INSERT INTO jobs (id, file_name, source_code, status, created_at, updated_at, submitted_files, parent_job_id, run_version, user_id)
+               VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)""",
+            (job_id, file_name, source_code, now, now, json.dumps(submitted_files), parent_job_id, run_version, user_id),
         )
         conn.commit()
-        return get_job(job_id, db_path=db_path)
+        return get_job(job_id, user_id, db_path=db_path)
     finally:
         conn.close()
 
 
-def get_job(job_id: str, *, db_path: Path | str = DB_PATH) -> dict[str, Any] | None:
-    """Fetch a single job row as a dict, or None if not found."""
+def get_job(job_id: str, user_id: str, *, db_path: Path | str = DB_PATH) -> dict[str, Any] | None:
+    """Fetch a single job row as a dict, or None if not found or unauthorized."""
     conn = _get_connection(db_path)
     try:
-        row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        row = conn.execute("SELECT * FROM jobs WHERE id = ? AND user_id = ?", (job_id, user_id)).fetchone()
         return dict(row) if row else None
     finally:
         conn.close()
 
 
 def list_jobs(
+    user_id: str,
     page: int = 1,
     limit: int = 20,
     *,
@@ -193,16 +236,17 @@ def list_jobs(
 
     conn = _get_connection(db_path)
     try:
-        total = conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
+        total = conn.execute("SELECT COUNT(*) FROM jobs WHERE user_id = ?", (user_id,)).fetchone()[0]
         rows = conn.execute(
             """SELECT j.id, j.file_name, j.status, j.iteration, j.created_at, j.updated_at,
                       j.parent_job_id, j.run_version,
                       pr.confidence_level, pr.has_errors
                FROM jobs j
                LEFT JOIN pipeline_results pr ON pr.job_id = j.id
+               WHERE j.user_id = ?
                ORDER BY j.created_at DESC
                LIMIT ? OFFSET ?""",
-            (limit, offset),
+            (user_id, limit, offset),
         ).fetchall()
 
         jobs = []
@@ -253,13 +297,14 @@ def update_job(
 
 def get_job_history(
     job_id: str,
+    user_id: str,
     *,
     db_path: Path | str = DB_PATH,
 ) -> list[dict[str, Any]]:
     """Return all jobs in a given lineage, ordered by run_version ASC."""
     conn = _get_connection(db_path)
     try:
-        row = conn.execute("SELECT id, parent_job_id FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        row = conn.execute("SELECT id, parent_job_id FROM jobs WHERE id = ? AND user_id = ?", (job_id, user_id)).fetchone()
         if not row:
             return []
             
@@ -271,9 +316,9 @@ def get_job_history(
                       pr.confidence_level, pr.has_errors
                FROM jobs j
                LEFT JOIN pipeline_results pr ON pr.job_id = j.id
-               WHERE j.id = ? OR j.parent_job_id = ?
+               WHERE (j.id = ? OR j.parent_job_id = ?) AND j.user_id = ?
                ORDER BY j.run_version ASC""",
-            (root_id, root_id)
+            (root_id, root_id, user_id)
         ).fetchall()
         
         jobs = []

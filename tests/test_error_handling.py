@@ -238,6 +238,10 @@ class TestAPIErrorHandling:
             with patch("backend.server.pipeline_graph",
                         build_pipeline_graph(patched_analyst, patched_coder, patched_reviewer)):
                 client = TestClient(app)
+                
+                # Setup Auth
+                client.post("/api/v1/auth/register", json={"username": "apifailuser", "password": "password"})
+                client.post("/api/v1/auth/login", data={"username": "apifailuser", "password": "password"})
 
                 # Submit job
                 with open(SAMPLE_PATH, "rb") as f:
