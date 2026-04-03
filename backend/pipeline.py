@@ -15,10 +15,13 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-# Suppress Pydantic / Langchain warnings for cleaner output
-warnings.filterwarnings("ignore", message=".*Pydantic V1.*")
-warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
-warnings.filterwarnings("ignore", module="langchain")
+# Suppress known upstream warning: langchain-core internally imports pydantic.v1
+# shims which emit a UserWarning on Python 3.14+.  This is a third-party issue.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*Pydantic V1.*isn't compatible with Python 3\.14.*",
+    category=UserWarning,
+)
 
 # Allow running as `python backend/pipeline.py` from project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

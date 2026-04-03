@@ -17,13 +17,14 @@ export default function CodeViewer({ code, language = "python", title }: Props) 
         {({ style, tokens, getLineProps, getTokenProps }) => (
           <pre className={styles.pre} style={{ ...style, background: "transparent" }}>
             {tokens.map((line, i) => {
-              const lineProps = getLineProps({ line, key: i });
+              const { key: _lineKey, ...lineRestProps } = getLineProps({ line, key: i });
               return (
-                <div key={i} {...lineProps}>
+                <div key={i} {...lineRestProps}>
                   <span className={styles.lineNumber}>{i + 1}</span>
-                  {line.map((token, key) => (
-                    <span key={key} {...getTokenProps({ token, key })} />
-                  ))}
+                  {line.map((token, j) => {
+                    const { key: _tokenKey, ...tokenRestProps } = getTokenProps({ token, key: j });
+                    return <span key={j} {...tokenRestProps} />;
+                  })}
                 </div>
               );
             })}

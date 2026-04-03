@@ -11,12 +11,17 @@ from backend.server import app
 client = TestClient(app)
 
 def test_auth_flow():
+    import uuid
+    unique = uuid.uuid4().hex[:8]
+    username = f"flow_user_{unique}"
+    password = "flow_password"
+
     # 1. Register works
-    resp1 = client.post("/api/v1/auth/register", json={"username": "flow_user", "password": "flow_password"})
+    resp1 = client.post("/api/v1/auth/register", json={"username": username, "password": password})
     assert resp1.status_code == 200, resp1.text
 
     # 2. Login works and returns HttpOnly cookie
-    resp2 = client.post("/api/v1/auth/login", data={"username": "flow_user", "password": "flow_password"})
+    resp2 = client.post("/api/v1/auth/login", data={"username": username, "password": password})
     assert resp2.status_code == 200, resp2.text
     
     # Verify Cookie behavior
@@ -29,7 +34,7 @@ def test_auth_flow():
     # TestClient persists cookies automatically for subsequent requests
     resp3 = client.get("/api/v1/auth/me")
     assert resp3.status_code == 200, resp3.text
-    assert resp3.json()["username"] == "flow_user"
+    assert resp3.json()["username"] == username
 
     # 4. protected routes reject unauthenticated
     client.cookies.clear() # Simulate logout / no cookie
@@ -41,7 +46,7 @@ def test_auth_flow():
     assert resp5.status_code == 401
     
     # 5. Logout works
-    client.post("/api/v1/auth/login", data={"username": "flow_user", "password": "flow_password"}) # re-login
+    client.post("/api/v1/auth/login", data={"username": username, "password": password}) # re-login
     resp6 = client.post("/api/v1/auth/logout")
     assert resp6.status_code == 200
     # Cookie should be cleared by having Max-Age=0 or something similar
@@ -50,12 +55,15 @@ def test_auth_flow():
 
 
 def test_multi_user_isolation():
+    import uuid
+    unique = uuid.uuid4().hex[:8]
+
     # Register Alice and Bob
-    client.post("/api/v1/auth/register", json={"username": "alice", "password": "pwd"})
-    client.post("/api/v1/auth/register", json={"username": "bob", "password": "pwd"})
+    client.post("/api/v1/auth/register", json={"username": f"alice_{unique}", "password": "pwd"})
+    client.post("/api/v1/auth/register", json={"username": f"bob_{unique}", "password": "pwd"})
 
     # Login Alice
-    client.post("/api/v1/auth/login", data={"username": "alice", "password": "pwd"})
+    client.post("/api/v1/auth/login", data={"username": f"alice_{unique}", "password": "pwd"})
     
     import pathlib
     # Have Alice submit a job
@@ -74,7 +82,7 @@ def test_multi_user_isolation():
 
     # Bob logs in
     client.cookies.clear()
-    client.post("/api/v1/auth/login", data={"username": "bob", "password": "pwd"})
+    client.post("/api/v1/auth/login", data={"username": f"bob_{unique}", "password": "pwd"})
 
     # Bob cannot see Alice's job
     resp_c = client.get(f"/api/v1/jobs/{alice_job_id}")

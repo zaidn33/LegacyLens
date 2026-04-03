@@ -20,10 +20,14 @@ from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel, Field
 import os
 
-# Suppress Pydantic / Langchain warnings for cleaner output
-warnings.filterwarnings("ignore", message=".*Pydantic V1.*")
-warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
-warnings.filterwarnings("ignore", module="langchain")
+# Suppress known upstream warning: langchain-core internally imports pydantic.v1
+# shims which emit a UserWarning on Python 3.14+.  This is a third-party issue
+# (langchain-core / pydantic compat) — not our code.  Narrowly scoped.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*Pydantic V1.*isn't compatible with Python 3\.14.*",
+    category=UserWarning,
+)
 
 from backend.state import PipelineState
 from backend.graph import build_pipeline_graph

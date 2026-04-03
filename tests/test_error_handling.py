@@ -240,8 +240,10 @@ class TestAPIErrorHandling:
                 client = TestClient(app)
                 
                 # Setup Auth
-                client.post("/api/v1/auth/register", json={"username": "apifailuser", "password": "password"})
-                client.post("/api/v1/auth/login", data={"username": "apifailuser", "password": "password"})
+                import uuid
+                unique_user = f"apifailuser_{uuid.uuid4().hex[:8]}"
+                client.post("/api/v1/auth/register", json={"username": unique_user, "password": "password"})
+                client.post("/api/v1/auth/login", data={"username": unique_user, "password": "password"})
 
                 # Submit job
                 with open(SAMPLE_PATH, "rb") as f:

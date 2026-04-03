@@ -1,0 +1,39 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\znaus\Desktop\LegacyLens
+plugins: anyio-4.12.1, langsmith-0.7.22
+collecting ... collected 10 items
+
+tests/test_error_handling.py::TestErrorHandling::test_happy_path_has_empty_errors PASSED [ 10%]
+tests/test_error_handling.py::TestErrorHandling::test_coder_repeated_validation_error_exhausts_iterations PASSED [ 20%]
+tests/test_error_handling.py::TestErrorHandling::test_reviewer_failure_preserves_coder_output PASSED [ 30%]
+tests/test_error_handling.py::TestErrorHandling::test_scoring_failure_uses_fallback_confidence PASSED [ 40%]
+tests/test_error_handling.py::TestErrorHandling::test_partial_result_persists_to_disk PASSED [ 50%]
+tests/test_error_handling.py::TestAPIErrorHandling::test_api_failure_returns_structured_errors PASSED [ 60%]
+tests/test_phase7.py::test_phase7_lineage_and_diff PASSED                [ 70%]
+tests/test_phase8_verification.py::test_auth_flow PASSED                 [ 80%]
+tests/test_phase8_verification.py::test_multi_user_isolation PASSED      [ 90%]
+tests/test_regression.py::test_messy_billing_regression PASSED           [100%]
+
+============================== warnings summary ===============================
+backend\server.py:57
+  C:\Users\znaus\Desktop\LegacyLens\backend\server.py:57: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+..\..\..\..\Python314\Lib\site-packages\fastapi\applications.py:4573
+  C:\Python314\Lib\site-packages\fastapi\applications.py:4573: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 10 passed, 2 warnings in 3.10s ========================

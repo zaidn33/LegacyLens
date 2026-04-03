@@ -1,0 +1,403 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\znaus\Desktop\LegacyLens
+plugins: anyio-4.12.1, langsmith-0.7.22
+collecting ... collected 7 items / 2 errors
+
+=================================== ERRORS ====================================
+____________________ ERROR collecting tests/test_phase7.py ____________________
+
+    import time
+    from fastapi.testclient import TestClient
+>   from backend.server import app
+
+tests\test_phase7.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    FastAPI server exposing the LegacyLens pipeline via LangGraph.
+    
+    Phase 4: Jobs persisted in SQLite, artifacts served from run-history
+    directories, CORS enabled for the Next.js frontend.
+    """
+    
+    import uuid
+    import warnings
+    from pathlib import Path
+    from typing import Any
+    
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query, Depends, Response, status
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.security import OAuth2PasswordRequestForm
+    from fastapi.responses import PlainTextResponse, JSONResponse
+    from pydantic import BaseModel, Field
+    import os
+    
+    # Suppress known upstream warning: langchain-core internally imports pydantic.v1
+    # shims which emit a UserWarning on Python 3.14+.  This is a third-party issue
+    # (langchain-core / pydantic compat) ù not our code.  Narrowly scoped.
+    warnings.filterwarnings(
+        "ignore",
+        message=r".*Pydantic V1.*isn't compatible with Python 3\.14.*",
+        category=UserWarning,
+    )
+    
+    from backend.state import PipelineState
+    from backend.graph import build_pipeline_graph
+    from backend.analyst import AnalystAgent
+    from backend.coder import CoderAgent
+    from backend.reviewer import ReviewerAgent
+    from backend.provider import MockProvider
+    from backend.contracts import (
+        PipelineError,
+        PipelineResult,
+        DiffResponse,
+        CodeDelta,
+        LogicMapDelta,
+        ConfidenceDelta,
+        DefectDelta
+    )
+    from backend import db
+    from backend.auth import get_password_hash, verify_password, create_access_token, get_current_user
+    
+    
+    # ---------------------------------------------------------------------------
+    # App setup
+    # ---------------------------------------------------------------------------
+    
+    app = FastAPI(title="LegacyLens Pipeline API", version="2.0.0")
+    
+    @app.on_event("startup")
+    def startup_event():
+        admin_user = os.getenv("ADMIN_USERNAME")
+        admin_pass = os.getenv("ADMIN_PASSWORD")
+        if admin_user and admin_pass:
+            conn = db._get_connection()
+            try:
+                count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+                if count == 0:
+                    print(f"Seeding admin user '{admin_user}'...")
+                    db.create_user(str(uuid.uuid4()), admin_user, get_password_hash(admin_pass))
+            except Exception as e:
+                print(f"Seed failed: {e}")
+            finally:
+                conn.close()
+    
+    # CORS ù allow the Next.js dev server
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    
+    # ---------------------------------------------------------------------------
+    # Response models
+    # ---------------------------------------------------------------------------
+    
+    class JobStatusResponse(BaseModel):
+        """Data contract for polling job status and retrieving results.
+    
+        Status values:
+          - "pending"              ù job accepted, not yet started
+          - "processing"           ù pipeline is running
+          - "completed"            ù pipeline finished without errors
+          - "completed_with_errors"ù pipeline produced partial results with errors
+          - "failed"               ù pipeline could not produce any result
+        """
+        job_id: str
+        file_name: str = ""
+        source_code: str = ""
+        status: str
+        current_node: str | None = None
+        iteration: int = 0
+        result: dict | None = None
+        error: str | None = None
+        errors: list[PipelineError] = Field(default_factory=list)
+        parent_job_id: str | None = None
+        run_version: int = 1
+    
+    
+    class JobSummary(BaseModel):
+        """Lightweight job info for the job list ù no full result blob."""
+        job_id: str
+        file_name: str
+        status: str
+        confidence_level: str | None = None
+        iterations: int = 0
+        has_errors: bool = False
+        created_at: str
+        updated_at: str
+        parent_job_id: str | None = None
+        run_version: int = 1
+    
+    
+    class JobListResponse(BaseModel):
+        """Paginated job list response."""
+        jobs: list[JobSummary]
+        total: int
+        page: int
+        limit: int
+        total_pages: int
+    
+    
+    # ---------------------------------------------------------------------------
+    # Agent / graph setup
+    # ---------------------------------------------------------------------------
+    
+    # Initialize agents with MockProvider for Phase 4 dev
+    provider = MockProvider()
+    analyst = AnalystAgent(provider)
+    coder = CoderAgent(provider)
+    reviewer = ReviewerAgent(provider)
+    
+    # Compile LangGraph execution graph once
+    pipeline_graph = build_pipeline_graph(analyst, coder, reviewer)
+    
+    # Ensure DB schema exists on import
+>   db.init_db()
+
+backend\server.py:147: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_path = WindowsPath('C:/Users/znaus/Desktop/LegacyLens/legacylens.db')
+
+    def init_db(db_path: Path | str = DB_PATH) -> None:
+        """Create tables if they don't already exist."""
+>       conn = _get_connection(db_path)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\db.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_path = WindowsPath('C:/Users/znaus/Desktop/LegacyLens/legacylens.db')
+
+    def _get_connection(db_path: Path | str = DB_PATH):
+        """Open a connection using either Turso or local SQLite with fallback."""
+        if USE_TURSO:
+            if not TURSO_DATABASE_URL:
+                # We explicitly want Turso, but URL is missing -> fail fast
+>               raise ValueError("USE_TURSO is true but TURSO_DATABASE_URL is not set.")
+E               ValueError: USE_TURSO is true but TURSO_DATABASE_URL is not set.
+
+backend\db.py:106: ValueError
+_____________ ERROR collecting tests/test_phase8_verification.py ______________
+
+    import pytest
+    import sys
+    from pathlib import Path
+    
+    # Ensure backend can be imported
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    
+    from fastapi.testclient import TestClient
+>   from backend.server import app
+
+tests\test_phase8_verification.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """
+    FastAPI server exposing the LegacyLens pipeline via LangGraph.
+    
+    Phase 4: Jobs persisted in SQLite, artifacts served from run-history
+    directories, CORS enabled for the Next.js frontend.
+    """
+    
+    import uuid
+    import warnings
+    from pathlib import Path
+    from typing import Any
+    
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query, Depends, Response, status
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.security import OAuth2PasswordRequestForm
+    from fastapi.responses import PlainTextResponse, JSONResponse
+    from pydantic import BaseModel, Field
+    import os
+    
+    # Suppress known upstream warning: langchain-core internally imports pydantic.v1
+    # shims which emit a UserWarning on Python 3.14+.  This is a third-party issue
+    # (langchain-core / pydantic compat) ù not our code.  Narrowly scoped.
+    warnings.filterwarnings(
+        "ignore",
+        message=r".*Pydantic V1.*isn't compatible with Python 3\.14.*",
+        category=UserWarning,
+    )
+    
+    from backend.state import PipelineState
+    from backend.graph import build_pipeline_graph
+    from backend.analyst import AnalystAgent
+    from backend.coder import CoderAgent
+    from backend.reviewer import ReviewerAgent
+    from backend.provider import MockProvider
+    from backend.contracts import (
+        PipelineError,
+        PipelineResult,
+        DiffResponse,
+        CodeDelta,
+        LogicMapDelta,
+        ConfidenceDelta,
+        DefectDelta
+    )
+    from backend import db
+    from backend.auth import get_password_hash, verify_password, create_access_token, get_current_user
+    
+    
+    # ---------------------------------------------------------------------------
+    # App setup
+    # ---------------------------------------------------------------------------
+    
+    app = FastAPI(title="LegacyLens Pipeline API", version="2.0.0")
+    
+    @app.on_event("startup")
+    def startup_event():
+        admin_user = os.getenv("ADMIN_USERNAME")
+        admin_pass = os.getenv("ADMIN_PASSWORD")
+        if admin_user and admin_pass:
+            conn = db._get_connection()
+            try:
+                count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+                if count == 0:
+                    print(f"Seeding admin user '{admin_user}'...")
+                    db.create_user(str(uuid.uuid4()), admin_user, get_password_hash(admin_pass))
+            except Exception as e:
+                print(f"Seed failed: {e}")
+            finally:
+                conn.close()
+    
+    # CORS ù allow the Next.js dev server
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    
+    # ---------------------------------------------------------------------------
+    # Response models
+    # ---------------------------------------------------------------------------
+    
+    class JobStatusResponse(BaseModel):
+        """Data contract for polling job status and retrieving results.
+    
+        Status values:
+          - "pending"              ù job accepted, not yet started
+          - "processing"           ù pipeline is running
+          - "completed"            ù pipeline finished without errors
+          - "completed_with_errors"ù pipeline produced partial results with errors
+          - "failed"               ù pipeline could not produce any result
+        """
+        job_id: str
+        file_name: str = ""
+        source_code: str = ""
+        status: str
+        current_node: str | None = None
+        iteration: int = 0
+        result: dict | None = None
+        error: str | None = None
+        errors: list[PipelineError] = Field(default_factory=list)
+        parent_job_id: str | None = None
+        run_version: int = 1
+    
+    
+    class JobSummary(BaseModel):
+        """Lightweight job info for the job list ù no full result blob."""
+        job_id: str
+        file_name: str
+        status: str
+        confidence_level: str | None = None
+        iterations: int = 0
+        has_errors: bool = False
+        created_at: str
+        updated_at: str
+        parent_job_id: str | None = None
+        run_version: int = 1
+    
+    
+    class JobListResponse(BaseModel):
+        """Paginated job list response."""
+        jobs: list[JobSummary]
+        total: int
+        page: int
+        limit: int
+        total_pages: int
+    
+    
+    # ---------------------------------------------------------------------------
+    # Agent / graph setup
+    # ---------------------------------------------------------------------------
+    
+    # Initialize agents with MockProvider for Phase 4 dev
+    provider = MockProvider()
+    analyst = AnalystAgent(provider)
+    coder = CoderAgent(provider)
+    reviewer = ReviewerAgent(provider)
+    
+    # Compile LangGraph execution graph once
+    pipeline_graph = build_pipeline_graph(analyst, coder, reviewer)
+    
+    # Ensure DB schema exists on import
+>   db.init_db()
+
+backend\server.py:147: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_path = WindowsPath('C:/Users/znaus/Desktop/LegacyLens/legacylens.db')
+
+    def init_db(db_path: Path | str = DB_PATH) -> None:
+        """Create tables if they don't already exist."""
+>       conn = _get_connection(db_path)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\db.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_path = WindowsPath('C:/Users/znaus/Desktop/LegacyLens/legacylens.db')
+
+    def _get_connection(db_path: Path | str = DB_PATH):
+        """Open a connection using either Turso or local SQLite with fallback."""
+        if USE_TURSO:
+            if not TURSO_DATABASE_URL:
+                # We explicitly want Turso, but URL is missing -> fail fast
+>               raise ValueError("USE_TURSO is true but TURSO_DATABASE_URL is not set.")
+E               ValueError: USE_TURSO is true but TURSO_DATABASE_URL is not set.
+
+backend\db.py:106: ValueError
+============================== warnings summary ===============================
+backend\server.py:57
+backend\server.py:57
+  C:\Users\znaus\Desktop\LegacyLens\backend\server.py:57: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+..\..\..\..\Python314\Lib\site-packages\fastapi\applications.py:4573
+..\..\..\..\Python314\Lib\site-packages\fastapi\applications.py:4573
+  C:\Python314\Lib\site-packages\fastapi\applications.py:4573: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/test_phase7.py - ValueError: USE_TURSO is true but TURSO_DATABASE...
+ERROR tests/test_phase8_verification.py - ValueError: USE_TURSO is true but T...
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!
+======================== 4 warnings, 2 errors in 0.54s ========================

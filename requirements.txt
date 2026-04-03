@@ -11,3 +11,4 @@ tenacity
 python-jose
 passlib[bcrypt]
 bcrypt
+libsql-client
