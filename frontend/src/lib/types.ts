@@ -47,6 +47,7 @@ export interface LogicMap {
   logic_dictionary: DictEntry[];
   step_by_step_logic_flow: string[];
   business_rules: string[];
+  source_snippet_references: Record<string, string>;
   edge_cases: string[];
   dependencies: DependencyResolution[];
   critical_constraints: string[];

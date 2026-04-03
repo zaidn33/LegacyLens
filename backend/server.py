@@ -13,6 +13,7 @@ from typing import Any
 from dotenv import load_dotenv
 load_dotenv()
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query, Depends, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
@@ -52,10 +53,8 @@ from backend.auth import get_password_hash, verify_password, create_access_token
 # App setup
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="LegacyLens Pipeline API", version="2.0.0")
-
-@app.on_event("startup")
-def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     admin_user = os.getenv("ADMIN_USERNAME")
     admin_pass = os.getenv("ADMIN_PASSWORD")
     if admin_user and admin_pass:
@@ -69,6 +68,10 @@ def startup_event():
             print(f"Seed failed: {e}")
         finally:
             conn.close()
+    yield
+
+
+app = FastAPI(title="LegacyLens Pipeline API", version="2.0.0", lifespan=lifespan)
 
 # CORS — allow the Next.js dev server
 app.add_middleware(
