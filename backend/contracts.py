@@ -78,8 +78,8 @@ class DictEntry(BaseModel):
 
 class InputsAndOutputs(BaseModel):
     """Structured inputs, outputs, and external touchpoints."""
-    inputs: list[str] = Field(..., min_length=1)
-    outputs: list[str] = Field(..., min_length=1)
+    inputs: list[str] = Field(default_factory=list)
+    outputs: list[str] = Field(default_factory=list)
     external_touchpoints: list[str] = Field(default_factory=list)
 
 
