@@ -35,7 +35,7 @@ from backend.graph import build_pipeline_graph
 from backend.analyst import AnalystAgent
 from backend.coder import CoderAgent
 from backend.reviewer import ReviewerAgent
-from backend.provider import MockProvider
+from backend.provider import MockProvider, GraniteProvider, GroqProvider
 from backend.contracts import (
     PipelineError, 
     PipelineResult, 
@@ -137,8 +137,15 @@ class JobListResponse(BaseModel):
 # Agent / graph setup
 # ---------------------------------------------------------------------------
 
-# Initialize agents with MockProvider for Phase 4 dev
-provider = MockProvider()
+# Initialize agents based on .env config
+provider_name = os.getenv("LLM_PROVIDER", "mock").lower()
+if provider_name == "granite":
+    provider = GraniteProvider()
+elif provider_name == "groq":
+    provider = GroqProvider()
+else:
+    provider = MockProvider()
+
 analyst = AnalystAgent(provider)
 coder = CoderAgent(provider)
 reviewer = ReviewerAgent(provider)

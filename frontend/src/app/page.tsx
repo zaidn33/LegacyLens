@@ -54,23 +54,58 @@ export default function DashboardPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.logo}>◈</span>
+          <span className={styles.logo}>👓</span>
           <h1 className={styles.title}>LegacyLens</h1>
-          <span className={styles.tag}>Agentic Code Modernization</span>
         </div>
         <button 
           onClick={() => logoutUser()} 
-          style={{ background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+          style={{ background: 'transparent', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
         >
           Logout
         </button>
       </header>
 
       <main className={`container ${styles.main}`}>
+        {/* Hero Section */}
+        <section className={styles.heroSection}>
+          <h2 className={styles.heroTitle}>
+            Modernize COBOL<br />to Python Automatically
+          </h2>
+          <p className={styles.heroDescription}>
+            Preserve business logic, maintain traceability, and accelerate your mainframe migration with intelligent code conversion.
+          </p>
+          <div className={styles.codeBadge}>
+            <span className={styles.pillCobol}>[COBOL]</span>
+            <span className={styles.pillArrow}>→</span>
+            <span className={styles.pillPython}>[Python]</span>
+          </div>
+        </section>
+
         {/* Upload */}
         <section className={styles.uploadSection}>
-          <FileUpload onUpload={handleUpload} disabled={isUploading} />
-          {error && <p className={styles.error}>{error}</p>}
+          <div className={styles.uploadWrapper}>
+            <FileUpload onUpload={handleUpload} disabled={isUploading} />
+            {error && <p className={styles.error}>{error}</p>}
+          </div>
+        </section>
+
+        {/* Features */}
+        <section className={styles.featuresSection}>
+          <div className={styles.featureCard}>
+            <span className={styles.featureIcon}>🧬</span>
+            <h4>Logic Preservation</h4>
+            <p>Maps native logic patterns explicitly before code generation.</p>
+          </div>
+          <div className={styles.featureCard}>
+            <span className={styles.featureIcon}>📊</span>
+            <h4>Full Traceability</h4>
+            <p>Maintains parity records from mainframe source to target Python.</p>
+          </div>
+          <div className={styles.featureCard}>
+            <span className={styles.featureIcon}>⚡</span>
+            <h4>Intelligent Analysis</h4>
+            <p>Uses multi-agent refinement for confident dependency resolution.</p>
+          </div>
         </section>
 
         {/* Job List */}

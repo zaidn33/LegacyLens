@@ -39,38 +39,61 @@ class LLMProvider(ABC):
 
 class GraniteProvider(LLMProvider):
     """
-    IBM Granite 4.0 provider (via OpenAI compatible endpoint).
+    IBM Granite provider via WatsonX.
 
-    Handles rate limits, timeouts, and malformed JSON via tenacity retries
-    and explicit error mapping.
+    Uses the WatsonX REST API directly with IAM token authentication.
+    Handles token exchange, retries, and JSON schema enforcement.
     """
+
+    IAM_TOKEN_URL = "https://iam.cloud.ibm.com/identity/token"
 
     def __init__(
         self,
         api_key: str | None = None,
         base_url: str | None = None,
-        model: str = "granite-3.0-8b-instruct",
+        model: str | None = None,
     ):
-        api_key = api_key or os.getenv("WATSONX_APIKEY")
-        project_id = os.getenv("WATSONX_PROJECT_ID")
-        url = os.getenv("WATSONX_URL")
+        self.api_key = api_key or os.getenv("WATSONX_APIKEY")
+        self.project_id = os.getenv("WATSONX_PROJECT_ID")
+        watsonx_url = base_url or os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com")
+        self.base_url = watsonx_url.rstrip("/")
+        self.model = model or os.getenv("WATSONX_MODEL", "ibm/granite-3-8b-instruct")
 
-        self.api_key = api_key or os.environ.get("GRANITE_API_KEY", "dummy-local-key")
-        self.base_url = base_url or url or os.environ.get("OPENAI_API_BASE", "http://localhost:11434/v1")
-        self.model = model
+        if not self.api_key:
+            raise ValueError("WATSONX_APIKEY is required for GraniteProvider")
+        if not self.project_id:
+            raise ValueError("WATSONX_PROJECT_ID is required for GraniteProvider")
 
-        try:
-            from langchain_openai import ChatOpenAI
-        except ImportError:
-            raise ImportError("langchain-openai is required for GraniteProvider")
+        # Token is fetched lazily on first generate() call
+        self._iam_token: str | None = None
+        self._token_expiry: float = 0
 
-        self.llm = ChatOpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url,
-            model=self.model,
-            max_retries=0,  # Let tenacity handle it
-            temperature=0.0,
+    def _refresh_iam_token(self) -> None:
+        """Exchange IBM Cloud API key for a time-limited IAM bearer token."""
+        import time
+        import httpx
+
+        resp = httpx.post(
+            self.IAM_TOKEN_URL,
+            data={
+                "grant_type": "urn:ibm:params:oauth:grant-type:apikey",
+                "apikey": self.api_key,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=30,
         )
+        resp.raise_for_status()
+        body = resp.json()
+        self._iam_token = body["access_token"]
+        # Refresh 60s before expiry
+        self._token_expiry = body.get("expiration", time.time() + 3600) - 60
+
+    def _get_token(self) -> str:
+        """Return a valid IAM token, refreshing if expired."""
+        import time
+        if time.time() >= self._token_expiry:
+            self._refresh_iam_token()
+        return self._iam_token
 
     @retry(
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -83,25 +106,172 @@ class GraniteProvider(LLMProvider):
         user_prompt: str,
         schema: dict[str, Any],
     ) -> dict:
-        from langchain_core.messages import SystemMessage, HumanMessage
         import httpx
-        
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt)
-        ]
 
-        structured_llm = self.llm.with_structured_output(schema)
+        token = self._get_token()
+        url = (
+            f"{self.base_url}/ml/v1/text/chat"
+            f"?version=2024-05-31&project_id={self.project_id}"
+        )
+
+        # Build schema instructions for the system prompt so the model
+        # returns JSON matching the expected shape.
+        schema_hint = json.dumps(schema, indent=2)
+        full_system = (
+            f"{system_prompt}\n\n"
+            f"IMPORTANT: You MUST respond with valid JSON matching this exact schema. "
+            f"Do not include any text before or after the JSON object.\n\n"
+            f"```json\n{schema_hint}\n```"
+        )
+
+        payload = {
+            "model_id": self.model,
+            "messages": [
+                {"role": "system", "content": full_system},
+                {"role": "user", "content": user_prompt},
+            ],
+            "parameters": {
+                "max_tokens": 16000,
+                "temperature": 0.0,
+            },
+            "project_id": self.project_id,
+        }
 
         try:
-            result = structured_llm.invoke(messages)
-            if not result:
-                raise ValueError("LLM returned empty or malformed output")
-            return result
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse structured JSON output: {e}")
+            resp = httpx.post(
+                url,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                timeout=120,
+            )
+            resp.raise_for_status()
+            body = resp.json()
+
+            # Extract the assistant message content
+            choices = body.get("choices", [])
+            if not choices:
+                raise ValueError(f"WatsonX returned no choices. Full response: {body}")
+
+            content = choices[0].get("message", {}).get("content", "")
+            if not content:
+                raise ValueError("WatsonX returned empty content")
+
+            # Strip markdown fences if present
+            text = content.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[-1]
+            if text.endswith("```"):
+                text = text.rsplit("```", 1)[0]
+            text = text.strip()
+
+            parsed = json.loads(text)
+            if not isinstance(parsed, dict):
+                raise ValueError(f"Expected JSON object, got {type(parsed).__name__}")
+            return parsed
+
         except httpx.HTTPStatusError as e:
-            raise ValueError(f"Provider HTTP error {e.response.status_code}: {e}")
+            raise ValueError(
+                f"WatsonX HTTP {e.response.status_code}: {e.response.text[:500]}"
+            )
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse WatsonX response as JSON: {e}")
+        except Exception as e:
+            raise ValueError(f"Provider execution failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Groq (fast, free tier)
+# ---------------------------------------------------------------------------
+
+class GroqProvider(LLMProvider):
+    """
+    Groq provider via OpenAI-compatible API.
+
+    Uses langchain_openai.ChatOpenAI pointed at Groq's endpoint.
+    Structured output is enforced via JSON schema instructions.
+    """
+
+    GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+
+    def __init__(self):
+        self.api_key = os.getenv("GROQ_API_KEY")
+        self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        if not self.api_key:
+            raise ValueError("GROQ_API_KEY is required for GroqProvider")
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        schema: dict[str, Any],
+    ) -> dict:
+        import httpx
+
+        full_system = (
+            f"{system_prompt}\n\n"
+            "IMPORTANT: Respond with a valid JSON object only. "
+            "No prose, no markdown fences, no text before or after the JSON.\n\n"
+            "Nested field formats (follow exactly):\n"
+            "- dependencies: [{\"reference_name\": \"...\", \"resolved_filename\": \"...\" or null, \"status\": \"resolved\" or \"unresolved\"}]\n"
+            "- logic_dictionary: [{\"legacy_name\": \"...\", \"proposed_modern_name\": \"...\", \"meaning\": \"...\", \"confidence\": \"High\"|\"Medium\"|\"Low\"}]\n"
+            "- inputs_and_outputs: {\"inputs\": [...], \"outputs\": [...], \"external_touchpoints\": [...]}\n"
+            "- assumptions_and_ambiguities: {\"observed\": [...], \"inferred\": [...], \"unknown\": [...]}\n"
+            "- confidence_assessment: {\"level\": \"High\"|\"Medium\"|\"Low\", \"rationale\": \"...\"}\n"
+            "- logic_step_mapping: [{\"function_or_test_name\": \"...\", \"logic_step\": \"...\", \"notes\": \"...\"}]\n"
+            "- defects: [{\"description\": \"...\", \"severity\": \"critical\"|\"major\"|\"minor\", \"logic_step\": \"...\", \"suggested_fix\": \"...\"}]\n"
+            "- confidence (in reviewer output): {\"level\": \"High\"|\"Medium\"|\"Low\", \"rationale\": \"...\"}"
+        )
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": full_system},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.0,
+            "max_tokens": 8000,
+            "response_format": {"type": "json_object"},
+        }
+
+        try:
+            resp = httpx.post(
+                f"{self.GROQ_BASE_URL}/chat/completions",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=120,
+            )
+            resp.raise_for_status()
+            body = resp.json()
+
+            choices = body.get("choices", [])
+            if not choices:
+                raise ValueError(f"Groq returned no choices. Response: {body}")
+
+            content = choices[0].get("message", {}).get("content", "").strip()
+            if not content:
+                raise ValueError("Groq returned empty content")
+
+            parsed = json.loads(content)
+            if not isinstance(parsed, dict):
+                raise ValueError(f"Expected JSON object, got {type(parsed).__name__}")
+            return parsed
+
+        except httpx.HTTPStatusError as e:
+            raise ValueError(f"Groq HTTP {e.response.status_code}: {e.response.text[:500]}")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse Groq response as JSON: {e}")
         except Exception as e:
             raise ValueError(f"Provider execution failed: {e}")
 

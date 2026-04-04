@@ -7,13 +7,14 @@
   border-bottom: 1px solid var(--border-primary);
   padding: var(--space-md) var(--space-lg);
   background: var(--bg-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .brand {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  max-width: 1440px;
-  margin: 0 auto;
 }
 .logo {
   font-size: 1.6rem;
@@ -27,14 +28,6 @@
   font-weight: 700;
   color: var(--text-primary);
 }
-.tag {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: var(--bg-tertiary);
-  margin-left: var(--space-xs);
-}
 
 /* Main */
 .main {
@@ -45,15 +38,153 @@
   gap: var(--space-xl);
 }
 
+/* Hero Section */
+.heroSection {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-xl) 0 var(--space-lg);
+  animation: fade-in 0.6s ease forwards;
+}
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-md);
+}
+.heroDescription {
+  font-size: 1.25rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  max-width: 600px;
+  margin: 0 auto var(--space-lg);
+}
+
+/* Code Badge */
+.codeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.pillCobol {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444; /* red */
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.pillPython {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e; /* green */
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.pillArrow {
+  color: #06b6d4; /* cyan */
+  font-weight: 700;
+}
+
 /* Upload */
 .uploadSection {
-  animation: fade-in 0.4s ease forwards;
+  margin: 0 auto var(--space-xl);
+  max-width: 800px;
+  width: 100%;
+}
+.uploadWrapper {
+  border: 2px dashed var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  transition: all var(--transition-normal);
+  background: var(--bg-card);
+}
+.uploadWrapper:hover {
+  border-color: #00e5ff; /* electric blue */
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+.uploadHeader {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+.uploadIcon {
+  display: inline-block;
+  font-size: 2rem;
+  margin-bottom: var(--space-xs);
+  color: #94a3b8;
+}
+.uploadHeader h3 {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+.uploadHeader p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: var(--space-md);
+}
+.badges {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+.badges span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--text-accent);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
 }
 .error {
   margin-top: var(--space-sm);
   color: var(--status-failed);
   font-size: 0.85rem;
   text-align: center;
+}
+
+/* Features */
+.featuresSection {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+.featureCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 229, 255, 0.15);
+  border-color: #00e5ff;
+}
+.featureIcon {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: var(--space-sm);
+}
+.featureCard h4 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  font-weight: 600;
+}
+.featureCard p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 /* Job List */

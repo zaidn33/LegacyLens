@@ -34,7 +34,7 @@ from backend.contracts import (
     PipelineError,
     PipelineResult,
 )
-from backend.provider import GraniteProvider, MockProvider
+from backend.provider import GraniteProvider, GroqProvider, MockProvider
 from backend.render import render_logic_map
 from backend.reviewer import ReviewerAgent
 from backend.scoring import aggregate_confidence
@@ -147,6 +147,8 @@ def run_pipeline(
         provider = MockProvider()
     elif provider_name == "granite":
         provider = GraniteProvider()
+    elif provider_name == "groq":
+        provider = GroqProvider()
     else:
         raise ValueError(f"Unknown provider: {provider_name}")
 
@@ -310,6 +312,8 @@ def run_pipeline_graph(
         provider = MockProvider()
     elif provider_name == "granite":
         provider = GraniteProvider()
+    elif provider_name == "groq":
+        provider = GroqProvider()
     else:
         raise ValueError(f"Unknown provider: {provider_name}")
 
@@ -354,7 +358,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--provider",
-        choices=["granite", "mock"],
+        choices=["granite", "groq", "mock"],
         default="mock",
         help="LLM provider to use (default: mock)",
     )
