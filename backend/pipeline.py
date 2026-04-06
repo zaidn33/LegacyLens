@@ -1,7 +1,7 @@
 """
-Pipeline orchestrator — Analyst → Coder → Reviewer reflection loop.
+Pipeline orchestrator — Chunker → Analyst → Mapper → Coder → Reviewer reflection loop.
 
-Runs the full 3-agent pipeline with up to 3 Coder→Reviewer iterations.
+Runs the full pipeline with semantic chunking and up to 3 Coder→Reviewer iterations.
 Writes all outputs (logic_map, code, tests, review, confidence, errors) to disk.
 """
 
@@ -27,6 +27,7 @@ warnings.filterwarnings(
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from backend.analyst import AnalystAgent
+from backend.chunker import extract_global_context, extract_logic_chunks
 from backend.coder import CoderAgent
 from backend.contracts import (
     ConfidenceAssessment,
@@ -34,14 +35,14 @@ from backend.contracts import (
     PipelineError,
     PipelineResult,
 )
-from backend.provider import GraniteProvider, GroqProvider, MockProvider
+from backend.mapper import MapperAgent
+from backend.provider import GraniteProvider, GroqProvider, MockProvider, OpenAIProvider, GeminiProvider
 from backend.render import render_logic_map
 from backend.reviewer import ReviewerAgent
 from backend.scoring import aggregate_confidence
+from backend.config import MAX_ITERATIONS, MAX_SOURCE_LINES
 from backend.state import PipelineState
 from backend.graph import build_pipeline_graph
-
-MAX_ITERATIONS = 3
 
 
 # ---------------------------------------------------------------------------
@@ -149,22 +150,61 @@ def run_pipeline(
         provider = GraniteProvider()
     elif provider_name == "groq":
         provider = GroqProvider()
+    elif provider_name == "openai":
+        provider = OpenAIProvider()
+    elif provider_name == "gemini":
+        provider = GeminiProvider()
     else:
         raise ValueError(f"Unknown provider: {provider_name}")
 
     errors: list[PipelineError] = []
+
+    source_path = Path(source_path)
+    if not source_path.exists():
+        raise FileNotFoundError(f"Source file not found: {source_path}")
+    source_code = source_path.read_text(encoding="utf-8")
+
+    # --- Pre-processing: Truncation ---
+    lines = source_code.splitlines()
+    if len(lines) > MAX_SOURCE_LINES:
+        print(f"  [WARNING] Source code truncated from {len(lines)} to {MAX_SOURCE_LINES} lines.")
+        source_code = "\n".join(lines[:MAX_SOURCE_LINES])
 
     # --- Stage 1: Analyst ---
     # Analyst failure is NOT recoverable — no logic_map means nothing
     # downstream can run.  We let the exception propagate.
     print("[Stage 1/3] Analyst Agent — extracting Logic Map...")
     analyst = AnalystAgent(provider=provider)
-    logic_map = analyst.analyze(source_path, dependencies_dict=dependencies_dict)
+    logic_map = analyst.analyze_source(source_code, source_path.name, dependencies_dict=dependencies_dict)
 
     print(f"  Logic Map: {len(logic_map.business_rules)} business rules, "
           f"{len(logic_map.critical_constraints)} critical constraints")
 
-    # --- Stage 2 & 3: Coder → Reviewer loop ---
+    # --- Pre-processing: Semantic Chunking ---
+    print("\n[Pre-processing] Chunker — extracting Global Context and Logic Chunks...")
+    global_context = extract_global_context(source_code)
+    logic_chunks = extract_logic_chunks(source_code)
+    print(f"  Global Context: {len(global_context)} chars")
+    print(f"  Logic Chunks: {len(logic_chunks)} chunks")
+
+    # --- Stage 2: Mapper ---
+    print("\n[Stage 2/4] Mapper Agent — extracting Global State...")
+    mapper = MapperAgent(provider=provider)
+    mapper_output = None
+    try:
+        mapper_output = mapper.extract_global_state(global_context)
+        print(f"  Variables mapped: {len(mapper_output.variables)}")
+        print(f"  Summary: {mapper_output.global_state_summary}")
+    except ValidationError as exc:
+        pe = _make_error("mapper", exc, recoverable=True)
+        errors.append(pe)
+        print(f"  Mapper ValidationError: {exc}", file=sys.stderr)
+    except Exception as exc:
+        pe = _make_error("mapper", exc, recoverable=True)
+        errors.append(pe)
+        print(f"  Mapper error: {exc}", file=sys.stderr)
+
+    # --- Stage 3 & 4: Coder → Reviewer loop ---
     coder = CoderAgent(provider=provider)
     reviewer = ReviewerAgent(provider=provider)
 
@@ -175,12 +215,21 @@ def run_pipeline(
     for iteration in range(1, MAX_ITERATIONS + 1):
         # --- Coder ---
         try:
-            print(f"\n[Stage 2/3] Coder Agent — iteration {iteration}/{MAX_ITERATIONS}...")
-            coder_output = coder.generate(
-                logic_map=logic_map,
-                reviewer_feedback=reviewer_output,
-                iteration=iteration,
-            )
+            print(f"\n[Stage 3/4] Coder Agent — iteration {iteration}/{MAX_ITERATIONS}...")
+            if mapper_output is not None and logic_chunks:
+                coder_output = coder.generate_chunked(
+                    logic_map=logic_map,
+                    mapper_output=mapper_output,
+                    chunks=logic_chunks,
+                    reviewer_feedback=reviewer_output,
+                    iteration=iteration,
+                )
+            else:
+                coder_output = coder.generate(
+                    logic_map=logic_map,
+                    reviewer_feedback=reviewer_output,
+                    iteration=iteration,
+                )
             print(f"  Generated code: {len(coder_output.generated_code)} chars")
             print(f"  Generated tests: {len(coder_output.generated_tests)} chars")
             print(f"  Logic step mappings: {len(coder_output.logic_step_mapping)}")
@@ -204,10 +253,11 @@ def run_pipeline(
 
         # --- Reviewer ---
         try:
-            print(f"\n[Stage 3/3] Reviewer Agent — iteration {iteration}/{MAX_ITERATIONS}...")
+            print(f"\n[Stage 4/4] Reviewer Agent — iteration {iteration}/{MAX_ITERATIONS}...")
             reviewer_output = reviewer.review(
                 logic_map=logic_map,
                 coder_output=coder_output,
+                mapper_output=mapper_output,
             )
 
             defect_counts: dict[str, int] = {}
@@ -260,6 +310,7 @@ def run_pipeline(
     # --- Build result ---
     result = PipelineResult(
         logic_map=logic_map,
+        mapper_output=mapper_output,
         coder_output=coder_output,
         reviewer_output=reviewer_output,
         iterations=iteration,
@@ -314,18 +365,27 @@ def run_pipeline_graph(
         provider = GraniteProvider()
     elif provider_name == "groq":
         provider = GroqProvider()
+    elif provider_name == "openai":
+        provider = OpenAIProvider()
+    elif provider_name == "gemini":
+        provider = GeminiProvider()
     else:
         raise ValueError(f"Unknown provider: {provider_name}")
 
     analyst = AnalystAgent(provider)
     coder = CoderAgent(provider)
     reviewer = ReviewerAgent(provider)
-    graph = build_pipeline_graph(analyst, coder, reviewer)
+    mapper = MapperAgent(provider)
+    graph = build_pipeline_graph(analyst, coder, reviewer, mapper)
 
     initial_state = PipelineState(
         source_code=source_code,
         file_name=source_path.name,
-        logic_map=None, coder_output=None, reviewer_output=None,
+        global_context=None,
+        logic_chunks=None,
+        logic_map=None,
+        mapper_output=None,
+        coder_output=None, reviewer_output=None,
         result=None, iterations=0, error=None, errors=[],
     )
 
@@ -358,7 +418,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--provider",
-        choices=["granite", "groq", "mock"],
+        choices=["granite", "groq", "openai", "gemini", "mock"],
         default="mock",
         help="LLM provider to use (default: mock)",
     )
@@ -392,8 +452,10 @@ def main(argv: list[str] | None = None) -> None:
         if any(not e.recoverable for e in result.errors):
             sys.exit(1)
 
-    except Exception as exc:
-        print(f"\nPipeline failed: {exc}", file=sys.stderr)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"\nPipeline failed: {e}")
         sys.exit(1)
 
 

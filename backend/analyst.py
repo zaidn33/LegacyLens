@@ -40,6 +40,9 @@ class AnalystAgent:
         """
         Analyze a raw legacy source string.
         """
+        # --- Pre-processing: Comment Stripping ---
+        source_code = self._strip_cobol_comments(source_code)
+
         user_prompt = build_user_prompt(source_code, file_name, dependencies_dict=dependencies_dict)
         if run_version > 1:
             user_prompt += f"\n\n[System Runtime Context: run_version={run_version}]"
@@ -49,9 +52,30 @@ class AnalystAgent:
             system_prompt=ANALYST_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             schema=schema,
+            max_tokens=2000,
         )
 
         # Validate against the Pydantic contract — raises on any
         # missing / malformed section with the exact field name.
         logic_map = LogicMap.model_validate(raw_response)
         return logic_map
+
+    def _strip_cobol_comments(self, code: str) -> str:
+        """
+        Strip lines featuring an asterisk in column 7.
+        Returns the stripped code and logs the count.
+        """
+        lines = code.splitlines()
+        stripped = []
+        comment_count = 0
+        for line in lines:
+            # COBOL comment: index 6 (7th column) is '*'
+            if len(line) > 6 and line[6] == "*":
+                comment_count += 1
+                continue
+            stripped.append(line)
+        
+        if comment_count > 0:
+            print(f"  [ANALYST] Stripped {comment_count} COBOL comment lines.")
+        
+        return "\n".join(stripped)

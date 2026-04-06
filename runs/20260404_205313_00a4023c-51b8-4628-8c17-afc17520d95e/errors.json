@@ -1,0 +1,9 @@
+[
+  {
+    "stage": "coder",
+    "error_type": "ValueError",
+    "message": "Groq HTTP 429: {\"error\":{\"message\":\"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01knd1wdrwfp8v7xgcab7y3e7w` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 8396, Requested 8950. Please try again in 26.73s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
+    "recoverable": false,
+    "iteration": 1
+  }
+]

@@ -3,6 +3,8 @@ LLM provider abstraction with swappable implementations.
 
 Ships with:
   - GraniteProvider  — IBM Granite 4.0 (primary, requires API key)
+  - OpenAIProvider   — OpenAI GPT-4o (high-capacity, requires API key)
+  - GeminiProvider   — Google Gemini 1.5 Flash (free, high-limit)
   - MockProvider     — deterministic stub for development & CI
 """
 
@@ -10,9 +12,10 @@ from __future__ import annotations
 
 import os
 import json
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -22,12 +25,40 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 class LLMProvider(ABC):
     """Abstract base class — implement ``generate`` for each backend."""
 
+    def _parse_json(self, content: str) -> dict:
+        """Parse JSON response with a fault-tolerant fallback using json-repair."""
+        import json
+        try:
+            # First try standard parsing
+            parsed = json.loads(content, strict=False)
+        except json.JSONDecodeError:
+            # Fallback to json-repair for truncated or malformed responses
+            try:
+                from json_repair import repair_json
+                repaired = repair_json(content)
+                parsed = json.loads(repaired)
+            except Exception as e:
+                # If repair fails, re-raise the original error or a clearer one
+                raise ValueError(f"Failed to parse or repair JSON response: {content[:100]}...") from e
+
+        # --- Safety Net: Flatten List Wrappers ---
+        # If the LLM returned a list containing a single object, extract it.
+        # This handles common accidents like `[{ "key": "val" }]`.
+        if isinstance(parsed, list) and len(parsed) > 0 and isinstance(parsed[0], dict):
+            return parsed[0]
+            
+        if not isinstance(parsed, dict):
+            raise ValueError(f"Expected JSON object, got {type(parsed).__name__}")
+            
+        return parsed
+
     @abstractmethod
     def generate(
         self,
         system_prompt: str,
         user_prompt: str,
         schema: dict[str, Any],
+        max_tokens: int | None = None,
     ) -> dict:
         """Return a parsed JSON dict conforming to *schema*."""
         ...
@@ -105,6 +136,7 @@ class GraniteProvider(LLMProvider):
         system_prompt: str,
         user_prompt: str,
         schema: dict[str, Any],
+        max_tokens: int | None = None,
     ) -> dict:
         import httpx
 
@@ -168,17 +200,12 @@ class GraniteProvider(LLMProvider):
                 text = text.rsplit("```", 1)[0]
             text = text.strip()
 
-            parsed = json.loads(text)
-            if not isinstance(parsed, dict):
-                raise ValueError(f"Expected JSON object, got {type(parsed).__name__}")
-            return parsed
+            return self._parse_json(text)
 
         except httpx.HTTPStatusError as e:
             raise ValueError(
                 f"WatsonX HTTP {e.response.status_code}: {e.response.text[:500]}"
             )
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse WatsonX response as JSON: {e}")
         except Exception as e:
             raise ValueError(f"Provider execution failed: {e}")
 
@@ -204,7 +231,7 @@ class GroqProvider(LLMProvider):
             raise ValueError("GROQ_API_KEY is required for GroqProvider")
 
     @retry(
-        wait=wait_exponential(multiplier=1, min=2, max=10),
+        wait=wait_exponential(multiplier=1, min=2, max=45),
         stop=stop_after_attempt(3),
         reraise=True,
     )
@@ -213,6 +240,7 @@ class GroqProvider(LLMProvider):
         system_prompt: str,
         user_prompt: str,
         schema: dict[str, Any],
+        max_tokens: int | None = None,
     ) -> dict:
         import httpx
 
@@ -239,7 +267,6 @@ class GroqProvider(LLMProvider):
             ],
             "temperature": 0.0,
             "max_tokens": 8000,
-            "response_format": {"type": "json_object"},
         }
 
         try:
@@ -263,15 +290,202 @@ class GroqProvider(LLMProvider):
             if not content:
                 raise ValueError("Groq returned empty content")
 
-            parsed = json.loads(content)
-            if not isinstance(parsed, dict):
-                raise ValueError(f"Expected JSON object, got {type(parsed).__name__}")
-            return parsed
+            # Strip markdown fences if present
+            if content.startswith("```"):
+                content = content.split("\n", 1)[-1]
+            if content.endswith("```"):
+                content = content.rsplit("```", 1)[0]
+            content = content.strip()
+
+            return self._parse_json(content)
 
         except httpx.HTTPStatusError as e:
             raise ValueError(f"Groq HTTP {e.response.status_code}: {e.response.text[:500]}")
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse Groq response as JSON: {e}")
+        except Exception as e:
+            raise ValueError(f"Provider execution failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# OpenAI (standard high-capacity)
+# ---------------------------------------------------------------------------
+
+class OpenAIProvider(LLMProvider):
+    """
+    OpenAI provider via OpenAI's native API.
+
+    Handles structured output via JSON schema enforcement.
+    Requires OPENAI_API_KEY to be set in .env.
+    """
+
+    OPENAI_BASE_URL = "https://api.openai.com/v1"
+
+    def __init__(self):
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o")
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY is required for OpenAIProvider")
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        schema: dict[str, Any],
+        max_tokens: int | None = None,
+    ) -> dict:
+        import httpx
+
+        full_system = (
+            f"{system_prompt}\n\n"
+            "IMPORTANT: Respond with a valid JSON object only. "
+            "No prose, no markdown fences, no text before or after the JSON.\n\n"
+            "JSON structure MUST follow the schema provided."
+        )
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": full_system},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.0,
+            "max_tokens": max_tokens or 16384,
+            "response_format": {"type": "json_object"}
+        }
+
+        try:
+            resp = httpx.post(
+                f"{self.OPENAI_BASE_URL}/chat/completions",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=180,
+            )
+            resp.raise_for_status()
+            body = resp.json()
+
+            choices = body.get("choices", [])
+            if not choices:
+                raise ValueError(f"OpenAI returned no choices. Response: {body}")
+
+            content = choices[0].get("message", {}).get("content", "").strip()
+            if not content:
+                raise ValueError("OpenAI returned empty content")
+
+            # Strip markdown fences if present
+            if content.startswith("```"):
+                content = content.split("\n", 1)[-1]
+            if content.endswith("```"):
+                content = content.rsplit("```", 1)[0]
+            content = content.strip()
+
+            return self._parse_json(content)
+
+        except httpx.HTTPStatusError as e:
+            raise ValueError(f"OpenAI HTTP {e.response.status_code}: {e.response.text[:500]}")
+        except Exception as e:
+            raise ValueError(f"Provider execution failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Gemini (stable, high-limit free tier)
+# ---------------------------------------------------------------------------
+
+class GeminiProvider(LLMProvider):
+    """
+    Google Gemini provider via Google AI Studio API.
+
+    Uses Gemini 1.5 Flash for high-speed, high-token-limit analysis.
+    Requires GEMINI_API_KEY to be set in .env.
+    """
+
+    def __init__(self):
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        if not self.api_key:
+            raise ValueError("GEMINI_API_KEY is required for GeminiProvider")
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=2, max=15),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        schema: dict[str, Any],
+        max_tokens: int | None = None,
+    ) -> dict:
+        import httpx
+
+        # Clean the model name to avoid double 'models/' prefix
+        model_name = self.model
+        if model_name.startswith("models/"):
+            model_name = model_name.replace("models/", "", 1)
+
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            f"?key={self.api_key}"
+        )
+
+        full_system = (
+            f"{system_prompt}\n\n"
+            "IMPORTANT: Respond with a valid JSON object only. "
+            "No prose, no markdown fences, no text before or after the JSON.\n\n"
+            f"Schema:\n{json.dumps(schema, indent=2)}"
+        )
+
+        print(f"[PROVIDER: GEMINI] Calling {model_name} with ~{len(full_system) + len(user_prompt)} characters (max_tokens={max_tokens})...")
+
+
+        payload = {
+            "contents": [{
+                "parts": [{"text": f"System Instruction: {full_system}\n\nUser Input: {user_prompt}"}]
+            }],
+            "generationConfig": {
+                "temperature": 0.0,
+                "response_mime_type": "application/json",
+                "max_output_tokens": max_tokens,
+            }
+        }
+
+        try:
+            resp = httpx.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=180,
+            )
+            resp.raise_for_status()
+            body = resp.json()
+
+            # Extract content from Gemini's specific response structure
+            candidates = body.get("candidates", [])
+            if not candidates:
+                raise ValueError(f"Gemini returned no candidates. Response: {body}")
+
+            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+            if not text:
+                raise ValueError("Gemini returned empty text content")
+
+            # Strip markdown fences if Gemini ignored the instruction
+            if text.startswith("```"):
+                text = text.split("\n", 1)[-1]
+            if text.endswith("```"):
+                text = text.rsplit("```", 1)[0]
+            text = text.strip()
+
+            return self._parse_json(text)
+
+        except httpx.HTTPStatusError as e:
+            raise ValueError(f"Gemini HTTP {e.response.status_code}: {e.response.text[:500]}")
         except Exception as e:
             raise ValueError(f"Provider execution failed: {e}")
 
@@ -297,6 +511,7 @@ class MockProvider(LLMProvider):
         system_prompt: str,
         user_prompt: str,
         schema: dict[str, Any],
+        max_tokens: int | None = None,
     ) -> dict:
         if self._mock_response is not None:
             return self._mock_response
@@ -309,12 +524,72 @@ class MockProvider(LLMProvider):
         if "Legacy Logic Architect" in system_prompt:
             is_multi_file = "Auxiliary Dependency Files Provided" in user_prompt
             return self._analyst_response(is_multi_file, run_version)
+        elif "Mapper Agent" in system_prompt:
+            return self._mapper_response(run_version)
         elif "Coder Agent" in system_prompt:
             return self._coder_response(run_version)
+        elif "Generate Pytest tests" in system_prompt:
+            return self._test_gen_response(run_version)
         elif "Reviewer Agent" in system_prompt:
             return self._reviewer_response(run_version)
         else:
             return self._analyst_response(False, run_version)  # fallback
+
+    # ------------------------------------------------------------------
+    # Mapper mock
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _mapper_response(run_version: int = 1) -> dict:
+        """Realistic MapperOutput for the sample COBOL billing module."""
+        return {
+            "variables": [
+                {"cobol_name": "WS-CUST-FS", "python_name": "cust_file_status", "python_type": "str", "initial_value": "None", "pic_clause": "PIC XX", "level": "05"},
+                {"cobol_name": "WS-RATE-FS", "python_name": "rate_file_status", "python_type": "str", "initial_value": "None", "pic_clause": "PIC XX", "level": "05"},
+                {"cobol_name": "WS-BILL-FS", "python_name": "bill_file_status", "python_type": "str", "initial_value": "None", "pic_clause": "PIC XX", "level": "05"},
+                {"cobol_name": "WS-ERR-FS", "python_name": "err_file_status", "python_type": "str", "initial_value": "None", "pic_clause": "PIC XX", "level": "05"},
+                {"cobol_name": "WS-EOF-FLAG", "python_name": "eof_flag", "python_type": "str", "initial_value": "'N'", "pic_clause": "PIC X", "level": "05"},
+                {"cobol_name": "WS-CUST-ID", "python_name": "customer_id", "python_type": "str", "initial_value": "None", "pic_clause": "PIC X(10)", "level": "05"},
+                {"cobol_name": "WS-CUST-NAME", "python_name": "customer_name", "python_type": "str", "initial_value": "None", "pic_clause": "PIC X(30)", "level": "05"},
+                {"cobol_name": "WS-CUST-STATUS", "python_name": "account_status", "python_type": "str", "initial_value": "None", "pic_clause": "PIC X", "level": "05"},
+                {"cobol_name": "WS-USAGE-AMT", "python_name": "monthly_usage_units", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(7)V99", "level": "05"},
+                {"cobol_name": "WS-BASE-RATE", "python_name": "base_rate", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(3)V9(4)", "level": "05"},
+                {"cobol_name": "WS-TIER2-THRESHOLD", "python_name": "tier2_threshold", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(7)V99", "level": "05"},
+                {"cobol_name": "WS-TIER2-RATE", "python_name": "tier2_rate", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(3)V9(4)", "level": "05"},
+                {"cobol_name": "WS-TIER3-THRESHOLD", "python_name": "tier3_threshold", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(7)V99", "level": "05"},
+                {"cobol_name": "WS-TIER3-RATE", "python_name": "tier3_rate", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(3)V9(4)", "level": "05"},
+                {"cobol_name": "WS-DAYS-OVERDUE", "python_name": "days_overdue", "python_type": "int", "initial_value": "None", "pic_clause": "PIC 9(4)", "level": "05"},
+                {"cobol_name": "WS-LATE-FEE-PCT", "python_name": "late_fee_percentage", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9V9(4)", "level": "05"},
+                {"cobol_name": "WS-BASE-CHARGES", "python_name": "base_charges", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(9)V99", "level": "05"},
+                {"cobol_name": "WS-TIER2-CHARGES", "python_name": "tier2_charges", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(9)V99", "level": "05"},
+                {"cobol_name": "WS-TIER3-CHARGES", "python_name": "tier3_charges", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(9)V99", "level": "05"},
+                {"cobol_name": "WS-SUBTOTAL", "python_name": "subtotal", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(9)V99", "level": "05"},
+                {"cobol_name": "WS-PENALTY", "python_name": "penalty", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(9)V99", "level": "05"},
+                {"cobol_name": "WS-TOTAL-DUE", "python_name": "total_amount_due", "python_type": "Decimal", "initial_value": "None", "pic_clause": "PIC 9(9)V99", "level": "05"},
+                {"cobol_name": "WS-BILLING-DT", "python_name": "billing_date", "python_type": "str", "initial_value": "None", "pic_clause": "PIC X(10)", "level": "01"},
+                {"cobol_name": "WS-RECORDS-READ", "python_name": "records_read", "python_type": "int", "initial_value": "0", "pic_clause": "PIC 9(6)", "level": "05"},
+                {"cobol_name": "WS-RECORDS-BILLED", "python_name": "records_billed", "python_type": "int", "initial_value": "0", "pic_clause": "PIC 9(6)", "level": "05"},
+                {"cobol_name": "WS-RECORDS-ERROR", "python_name": "records_error", "python_type": "int", "initial_value": "0", "pic_clause": "PIC 9(6)", "level": "05"},
+                {"cobol_name": "WS-ERR-CODE", "python_name": "error_code", "python_type": "int", "initial_value": "None", "pic_clause": "PIC 9(4)", "level": "01"},
+                {"cobol_name": "WS-ERR-MSG", "python_name": "error_message", "python_type": "str", "initial_value": "None", "pic_clause": "PIC X(50)", "level": "01"},
+            ],
+            "global_state_summary": "Extracted 27 variables from COBOL DATA DIVISION covering file status, customer data, rate tables, billing calculations, and counters.",
+        }
+
+    # ------------------------------------------------------------------
+    # Test generation mock
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _test_gen_response(run_version: int = 1) -> dict:
+        """Mock response for the chunked test generation call."""
+        return {
+            "generated_tests": (
+                "import pytest\n\n"
+                "def test_placeholder():\n"
+                "    assert True  # Mock test generated during chunked execution\n"
+            ),
+        }
 
     # ------------------------------------------------------------------
     # Analyst mock

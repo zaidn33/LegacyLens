@@ -1,0 +1,133 @@
+{
+  "logic_map": {
+    "executive_summary": "The provided COBOL program, HELLO-WORLD, is designed to print a greeting message to the console a specified number of times. The program utilizes a counter to track the number of iterations and stops once the counter reaches a predefined maximum value.",
+    "business_objective": "Print 'HELLO, WORLD!' to the console 5 times",
+    "inputs_and_outputs": {
+      "inputs": [],
+      "outputs": [
+        "console output"
+      ],
+      "external_touchpoints": []
+    },
+    "logic_dictionary": [
+      {
+        "legacy_name": "WS-MESSAGE",
+        "proposed_modern_name": "greetingMessage",
+        "meaning": "The message to be printed to the console",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-COUNTER",
+        "proposed_modern_name": "iterationCounter",
+        "meaning": "The current iteration number",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-MAX",
+        "proposed_modern_name": "maxIterations",
+        "meaning": "The maximum number of iterations",
+        "confidence": "High"
+      }
+    ],
+    "step_by_step_logic_flow": [
+      "1. Initialize the iteration counter (WS-COUNTER) to 0 and the maximum iterations (WS-MAX) to 5",
+      "2. Perform the PRINT-PARA procedure until the iteration counter equals the maximum iterations",
+      "3. Within PRINT-PARA, increment the iteration counter by 1",
+      "4. Display the current iteration counter and the greeting message to the console",
+      "5. Stop the program once the maximum iterations are reached"
+    ],
+    "business_rules": [
+      "The program must print the greeting message to the console",
+      "The program must stop after a maximum of 5 iterations"
+    ],
+    "source_snippet_references": {},
+    "edge_cases": [
+      "The program does not handle any external inputs or errors",
+      "The program does not account for negative or zero values for the maximum iterations"
+    ],
+    "dependencies": [],
+    "critical_constraints": [
+      "The program must print the greeting message exactly 5 times",
+      "The program must stop after 5 iterations"
+    ],
+    "assumptions_and_ambiguities": {
+      "observed": [
+        "The program uses a fixed greeting message",
+        "The program uses a fixed maximum number of iterations"
+      ],
+      "inferred": [
+        "The program is designed to run in a console or terminal environment"
+      ],
+      "unknown": []
+    },
+    "test_relevant_scenarios": [
+      "Test the program with the default maximum iterations (5)",
+      "Test the program with a modified maximum iterations value"
+    ],
+    "confidence_assessment": {
+      "level": "High",
+      "rationale": "The program logic is straightforward and easy to understand, with no complex dependencies or ambiguous rules."
+    }
+  },
+  "coder_output": {
+    "generated_code": "\n# Python implementation of the Logic Map\ndef print_hello_world():\n    # Initialize the iteration counter and the maximum iterations\n    iteration_counter = 0\n    max_iterations = 5\n    greeting_message = 'HELLO, WORLD!'\n\n    # Perform the print procedure until the iteration counter equals the maximum iterations\n    while iteration_counter < max_iterations:\n        # Increment the iteration counter by 1\n        iteration_counter += 1\n        \n        # Display the current iteration counter and the greeting message to the console\n        print(f'Iteration {iteration_counter}: {greeting_message}')\n\n    # Stop the program once the maximum iterations are reached\n    return\n\n# Call the function to start the program\nprint_hello_world()\n",
+    "generated_tests": "\n# Pytest tests for the Logic Map\nimport pytest\nfrom io import StringIO\nimport sys\n\ndef test_print_hello_world(capsys):\n    # Test that the program prints the greeting message exactly 5 times\n    print_hello_world()\n    captured = capsys.readouterr()\n    assert captured.out.count('HELLO, WORLD!') == 5\n\ndef test_max_iterations(capsys):\n    # Test that the program stops after 5 iterations\n    print_hello_world()\n    captured = capsys.readouterr()\n    assert len(captured.out.split('\\n')) == 6  # 5 iterations + 1 for the last newline\n\ndef test_no_external_inputs():\n    # Test that the program does not handle any external inputs\n    try:\n        print_hello_world()\n    except Exception as e:\n        assert False, f'Unexpected exception: {e}'\n\ndef test_no_error_handling():\n    # Test that the program does not account for negative or zero values for the maximum iterations\n    try:\n        # Modify the max_iterations variable to test the error handling\n        max_iterations = 0\n        print_hello_world()\n    except Exception as e:\n        assert False, f'Unexpected exception: {e}'\n",
+    "implementation_choices": "The implementation uses a while loop to iterate over the range of max_iterations. The greeting message is printed to the console using the print function. The program does not handle any external inputs or errors, as per the Logic Map.",
+    "logic_step_mapping": [
+      {
+        "function_or_test_name": "print_hello_world",
+        "logic_step": "Initialize the iteration counter (WS-COUNTER) to 0 and the maximum iterations (WS-MAX) to 5",
+        "notes": "Implemented using the iteration_counter and max_iterations variables."
+      },
+      {
+        "function_or_test_name": "print_hello_world",
+        "logic_step": "Perform the PRINT-PARA procedure until the iteration counter equals the maximum iterations",
+        "notes": "Implemented using a while loop."
+      },
+      {
+        "function_or_test_name": "print_hello_world",
+        "logic_step": "Within PRINT-PARA, increment the iteration counter by 1",
+        "notes": "Implemented using the iteration_counter += 1 statement."
+      },
+      {
+        "function_or_test_name": "print_hello_world",
+        "logic_step": "Display the current iteration counter and the greeting message to the console",
+        "notes": "Implemented using the print function."
+      },
+      {
+        "function_or_test_name": "print_hello_world",
+        "logic_step": "Stop the program once the maximum iterations are reached",
+        "notes": "Implemented using the return statement."
+      },
+      {
+        "function_or_test_name": "test_print_hello_world",
+        "logic_step": "The program must print the greeting message exactly 5 times",
+        "notes": "Implemented using a Pytest test."
+      },
+      {
+        "function_or_test_name": "test_max_iterations",
+        "logic_step": "The program must stop after 5 iterations",
+        "notes": "Implemented using a Pytest test."
+      }
+    ],
+    "deferred_items": [
+      "Handling negative or zero values for the maximum iterations",
+      "Error handling for external inputs"
+    ]
+  },
+  "reviewer_output": null,
+  "iterations": 1,
+  "final_confidence": {
+    "level": "Low",
+    "rationale": "Analyst confidence: High. Reviewer did not complete \u2014 confidence cannot be assessed. Pipeline ran 1 iteration(s) before failure."
+  },
+  "errors": [
+    {
+      "stage": "reviewer",
+      "error_type": "ValueError",
+      "message": "Groq HTTP 429: {\"error\":{\"message\":\"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01knd1wdrwfp8v7xgcab7y3e7w` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 9773, Requested 2333. Please try again in 530ms. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
+      "recoverable": false,
+      "iteration": 1
+    }
+  ]
+}

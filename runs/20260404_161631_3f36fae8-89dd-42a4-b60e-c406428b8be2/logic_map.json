@@ -1,0 +1,109 @@
+{
+  "executive_summary": "The SIMPBATCH program calculates employee bonuses based on years of service and writes the results to a report file. The program reads employee records from a sequential file, applies bonus rules, and generates an output report.",
+  "business_objective": "Calculate employee bonuses and generate a report",
+  "inputs_and_outputs": {
+    "inputs": [
+      "EMP-FILE"
+    ],
+    "outputs": [
+      "RPT-FILE"
+    ],
+    "external_touchpoints": [
+      "EMPFILE",
+      "RPTFILE"
+    ]
+  },
+  "logic_dictionary": [
+    {
+      "legacy_name": "EMP-ID",
+      "proposed_modern_name": "Employee ID",
+      "meaning": "Unique identifier for the employee",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "EMP-NAME",
+      "proposed_modern_name": "Employee Name",
+      "meaning": "Name of the employee",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "EMP-BASE-SALARY",
+      "proposed_modern_name": "Base Salary",
+      "meaning": "Employee's base salary",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "EMP-YEARS-SERVICE",
+      "proposed_modern_name": "Years of Service",
+      "meaning": "Number of years the employee has been with the company",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "WS-BONUS",
+      "proposed_modern_name": "Calculated Bonus",
+      "meaning": "Bonus amount calculated based on years of service",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "WS-TOTAL",
+      "proposed_modern_name": "Total Compensation",
+      "meaning": "Total compensation including bonus",
+      "confidence": "High"
+    }
+  ],
+  "step_by_step_logic_flow": [
+    "Open input file EMP-FILE and output file RPT-FILE",
+    "Read the first employee record from EMP-FILE",
+    "Loop until end of file: calculate bonus and total compensation for each employee",
+    "Write the calculated bonus and total compensation to RPT-FILE",
+    "Read the next employee record from EMP-FILE",
+    "Close EMP-FILE and RPT-FILE"
+  ],
+  "business_rules": [
+    "If years of service is greater than 10, bonus is 15% of base salary",
+    "If years of service is between 5 and 10, bonus is 10% of base salary",
+    "If years of service is less than or equal to 5, bonus is 5% of base salary"
+  ],
+  "source_snippet_references": {},
+  "edge_cases": [
+    "Employee with no years of service",
+    "Employee with negative years of service",
+    "Employee with extremely high years of service"
+  ],
+  "dependencies": [
+    {
+      "reference_name": "EMPFILE",
+      "resolved_filename": "EMPFILE",
+      "status": "resolved"
+    },
+    {
+      "reference_name": "RPTFILE",
+      "resolved_filename": "RPTFILE",
+      "status": "resolved"
+    }
+  ],
+  "critical_constraints": [
+    "Bonus calculation rules must not change",
+    "Total compensation calculation must include bonus"
+  ],
+  "assumptions_and_ambiguities": {
+    "observed": [
+      "The program assumes that the input file EMP-FILE exists and is in the correct format"
+    ],
+    "inferred": [
+      "The program likely assumes that the output file RPT-FILE will be used for reporting purposes"
+    ],
+    "unknown": [
+      "The purpose of the FILLER fields in the RPT-REC record is unclear"
+    ]
+  },
+  "test_relevant_scenarios": [
+    "Test with an employee who has more than 10 years of service",
+    "Test with an employee who has between 5 and 10 years of service",
+    "Test with an employee who has less than or equal to 5 years of service"
+  ],
+  "confidence_assessment": {
+    "level": "High",
+    "rationale": "The program logic is straightforward and easy to follow, with clear business rules and calculations. The input and output files are well-defined, and the program assumes a simple and consistent format for the data."
+  }
+}

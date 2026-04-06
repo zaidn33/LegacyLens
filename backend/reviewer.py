@@ -3,11 +3,14 @@ Reviewer Agent — compares generated code against the Logic Map.
 
 Produces a ``ReviewerOutput`` with logic-parity findings, defects,
 suggested corrections, pass/fail decision, and confidence score.
+
+When a ``MapperOutput`` is provided, the reviewer also performs a
+variable alignment check to ensure the Coder respected the Global State.
 """
 
 from __future__ import annotations
 
-from .contracts import CoderOutput, LogicMap, ReviewerOutput
+from .contracts import CoderOutput, LogicMap, MapperOutput, ReviewerOutput
 from .provider import LLMProvider
 from .prompts import REVIEWER_SYSTEM_PROMPT
 
@@ -15,8 +18,9 @@ from .prompts import REVIEWER_SYSTEM_PROMPT
 def _build_reviewer_user_prompt(
     logic_map: LogicMap,
     coder_output: CoderOutput,
+    mapper_output: MapperOutput | None = None,
 ) -> str:
-    """Build the reviewer prompt with Logic Map and generated code."""
+    """Build the reviewer prompt with Logic Map, generated code, and optional Global State."""
     parts = [
         "Review the following generated code against the Logic Map.\n\n",
         "## Logic Map (Source of Truth)\n\n",
@@ -37,6 +41,22 @@ def _build_reviewer_user_prompt(
     parts.append("\nEdge Cases:\n")
     for case in logic_map.edge_cases:
         parts.append(f"  - {case}\n")
+
+    # --- Variable Alignment Check (Global State) ---
+    if mapper_output is not None:
+        parts.append("\n## Global State (Variable Alignment Check)\n\n")
+        parts.append(
+            "The following variables were extracted from the COBOL DATA DIVISION. "
+            "Verify that the generated code initializes and uses these variables "
+            "exactly as defined. Flag any mismatches, missing variables, or "
+            "invented placeholder names as defects.\n\n"
+        )
+        for v in mapper_output.variables:
+            parts.append(
+                f"  {v.cobol_name} -> {v.python_name}: "
+                f"type={v.python_type}, initial={v.initial_value}, "
+                f"pic={v.pic_clause}\n"
+            )
 
     parts.append("\n## Generated Code\n\n```python\n")
     parts.append(coder_output.generated_code)
@@ -72,17 +92,23 @@ class ReviewerAgent:
         self,
         logic_map: LogicMap,
         coder_output: CoderOutput,
+        mapper_output: MapperOutput | None = None,
         run_version: int = 1,
     ) -> ReviewerOutput:
         """
         Review generated code against the Logic Map.
+
+        When *mapper_output* is provided, the review prompt includes the
+        Global State so the Reviewer can flag variable alignment issues.
 
         Raises
         ------
         pydantic.ValidationError
             If the LLM response doesn't match the ReviewerOutput schema.
         """
-        user_prompt = _build_reviewer_user_prompt(logic_map, coder_output)
+        user_prompt = _build_reviewer_user_prompt(
+            logic_map, coder_output, mapper_output
+        )
         if run_version > 1:
             user_prompt += f"\n\n[System Runtime Context: run_version={run_version}]"
         schema = ReviewerOutput.model_json_schema()
@@ -91,6 +117,7 @@ class ReviewerAgent:
             system_prompt=REVIEWER_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             schema=schema,
+            max_tokens=1000,
         )
 
         output = ReviewerOutput.model_validate(raw)

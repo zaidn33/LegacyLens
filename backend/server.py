@@ -8,10 +8,13 @@ directories, CORS enabled for the Next.js frontend.
 import uuid
 import warnings
 from pathlib import Path
-from typing import Any
+import sys
+
+# Allow running as `python backend/server.py` from project root
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query, Depends, Response, status
@@ -34,8 +37,10 @@ from backend.state import PipelineState
 from backend.graph import build_pipeline_graph
 from backend.analyst import AnalystAgent
 from backend.coder import CoderAgent
+from backend.mapper import MapperAgent
 from backend.reviewer import ReviewerAgent
-from backend.provider import MockProvider, GraniteProvider, GroqProvider
+from backend.provider import MockProvider, GraniteProvider, GroqProvider, OpenAIProvider, GeminiProvider
+from backend.config import MAX_SOURCE_LINES
 from backend.contracts import (
     PipelineError, 
     PipelineResult, 
@@ -143,15 +148,22 @@ if provider_name == "granite":
     provider = GraniteProvider()
 elif provider_name == "groq":
     provider = GroqProvider()
+elif provider_name == "openai":
+    provider = OpenAIProvider()
+elif provider_name == "gemini":
+    provider = GeminiProvider()
 else:
     provider = MockProvider()
+
+print(f"--- LLM PROVIDER INITIALIZED: {provider_name.upper()} ---")
 
 analyst = AnalystAgent(provider)
 coder = CoderAgent(provider)
 reviewer = ReviewerAgent(provider)
+mapper = MapperAgent(provider)
 
 # Compile LangGraph execution graph once
-pipeline_graph = build_pipeline_graph(analyst, coder, reviewer)
+pipeline_graph = build_pipeline_graph(analyst, coder, reviewer, mapper)
 
 # Ensure DB schema exists on import
 db.init_db()
@@ -176,11 +188,20 @@ def _run_graph(job_id: str, source_code: str, file_name: str, dependencies_dict:
     """Executes the LangGraph pipeline in the background, persisting to DB."""
     db.update_job(job_id, status="processing")
 
+    # --- Pre-processing: Truncation ---
+    lines = source_code.splitlines()
+    if len(lines) > MAX_SOURCE_LINES:
+        print(f"  [SERVER] [WARNING] Source code truncated from {len(lines)} to {MAX_SOURCE_LINES} lines.")
+        source_code = "\n".join(lines[:MAX_SOURCE_LINES])
+
     deps = dependencies_dict if dependencies_dict else {}
     initial_state = PipelineState(
         source_code=source_code,
         file_name=file_name,
+        global_context=None,
+        logic_chunks=None,
         logic_map=None,
+        mapper_output=None,
         coder_output=None,
         reviewer_output=None,
         result=None,

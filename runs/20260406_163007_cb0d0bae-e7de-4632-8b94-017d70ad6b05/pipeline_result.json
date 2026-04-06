@@ -1,0 +1,104 @@
+{
+  "logic_map": {
+    "executive_summary": "This COBOL program, HELLOTEST, is a simple demonstration program. It displays user information and a counter loop, concluding with an age-based status check.",
+    "business_objective": "To demonstrate basic COBOL syntax including variable declaration, display statements, a PERFORM VARYING loop, and an IF-ELSE conditional.",
+    "inputs_and_outputs": {
+      "inputs": [],
+      "outputs": [
+        "Console output of program messages, user name, user age, counter values, and status (ADULT/MINOR)."
+      ],
+      "external_touchpoints": []
+    },
+    "logic_dictionary": [
+      {
+        "legacy_name": "USER-NAME",
+        "proposed_modern_name": "userName",
+        "meaning": "Stores the name of the user.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "USER-AGE",
+        "proposed_modern_name": "userAge",
+        "meaning": "Stores the age of the user.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "COUNTER",
+        "proposed_modern_name": "counter",
+        "meaning": "A loop counter variable.",
+        "confidence": "High"
+      }
+    ],
+    "step_by_step_logic_flow": [
+      "Start program execution.",
+      "Display initial header message.",
+      "Display the value of USER-NAME.",
+      "Display the value of USER-AGE.",
+      "Initialize COUNTER to 1.",
+      "Start a loop that continues as long as COUNTER is less than or equal to 3.",
+      "Inside the loop, display the current value of COUNTER.",
+      "Increment COUNTER by 1.",
+      "Check if COUNTER is greater than 3. If true, exit loop.",
+      "If USER-AGE is greater than or equal to 18, display 'STATUS: ADULT'.",
+      "Otherwise (if USER-AGE is less than 18), display 'STATUS: MINOR'.",
+      "Display a completion message.",
+      "Terminate the program."
+    ],
+    "business_rules": [
+      "If the user's age is 18 or greater, they are classified as an ADULT.",
+      "If the user's age is less than 18, they are classified as a MINOR."
+    ],
+    "source_snippet_references": {},
+    "edge_cases": [
+      "What happens if USER-AGE is exactly 18? (Handled by >= operator).",
+      "What happens if USER-AGE is a very large number? (PIC 99 limits to 99).",
+      "What happens if USER-NAME contains non-alphabetic characters? (PIC A(20) will accept them)."
+    ],
+    "dependencies": [],
+    "critical_constraints": [
+      "The program must run on a COBOL compiler.",
+      "The maximum value for USER-AGE is 99 due to PIC 99."
+    ],
+    "assumptions_and_ambiguities": {
+      "observed": [
+        "The program uses fixed initial values for USER-NAME and USER-AGE.",
+        "The loop iterates exactly 3 times."
+      ],
+      "inferred": [
+        "The purpose of this program is purely for demonstration or testing.",
+        "The output is intended for direct human viewing on a console."
+      ],
+      "unknown": [
+        "What is the intended real-world context for this program?",
+        "Are there any specific character set limitations for USER-NAME beyond standard alphanumeric?"
+      ]
+    },
+    "test_relevant_scenarios": [
+      "Test with USER-AGE = 21 (expected: ADULT).",
+      "Test with USER-AGE = 17 (expected: MINOR).",
+      "Test with USER-AGE = 18 (expected: ADULT).",
+      "Verify the loop runs exactly 3 times and displays RUN NUMBER: 1, 2, 3.",
+      "Verify the initial display of NAME and AGE."
+    ],
+    "confidence_assessment": {
+      "level": "High",
+      "rationale": "The provided COBOL code is straightforward and self-contained. All variables and logic flows are clearly defined within the source, allowing for high confidence in the analysis and mapping."
+    }
+  },
+  "coder_output": null,
+  "reviewer_output": null,
+  "iterations": 1,
+  "final_confidence": {
+    "level": "Low",
+    "rationale": "Analyst confidence: High. Reviewer did not complete \u2014 confidence cannot be assessed. Pipeline ran 1 iteration(s) before failure."
+  },
+  "errors": [
+    {
+      "stage": "coder",
+      "error_type": "ValueError",
+      "message": "Failed to parse Gemini response as JSON: {\n  \"generated_code\": \"def run_cobol_demo():\\n    \\\"\\\"\\\"Demonstrates basic COBOL-like syntax in Python.\\\"\\\"\\\"\\n    \\n    # Variable Declaration (simulated)\\n    user_name = \\\"Alice\\\"\\n    user_age = 25\\n    counter = 0\\n\\n    # Display initial header message\\n    print(\\\"*** COBOL Demo Program ***\\\")\\n    print(\\\"--------------------------\\\")\\n\\n    # Display user information\\n    print(f\\\"USER-NAME: {user_name}\\\")\\n    print(f\\\"USER-AGE: {user_age}\\\")\\n\\n    # Initialize COUNTER to 1\\n    count",
+      "recoverable": false,
+      "iteration": 1
+    }
+  ]
+}

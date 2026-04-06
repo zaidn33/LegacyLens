@@ -156,6 +156,32 @@ class LogicMap(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Mapper Agent — Global State extraction from DATA DIVISION
+# ---------------------------------------------------------------------------
+
+class VariableMapping(BaseModel):
+    """Single COBOL variable mapped to its Python equivalent."""
+    cobol_name: str = Field(..., description="Original COBOL variable name (e.g. WS-CUST-ID)")
+    python_name: str = Field(..., description="Proposed Python variable name (e.g. customer_id)")
+    python_type: str = Field(..., description="Python type: str, int, float, Decimal, bool")
+    initial_value: str = Field(..., description="Exact VALUE clause from source (e.g. 'N', 0, SPACES)")
+    pic_clause: str = Field(..., description="Original PIC clause (e.g. PIC X(10))")
+    level: str = Field(..., description="COBOL level number: 01, 05, 88, etc.")
+
+
+class MapperOutput(BaseModel):
+    """Output of the Mapper Agent — structured Global State."""
+    variables: list[VariableMapping] = Field(
+        ..., min_length=1,
+        description="All COBOL variables extracted from the DATA DIVISION",
+    )
+    global_state_summary: str = Field(
+        ..., min_length=10,
+        description="One-line summary of the extracted global state",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Phase 2 — Coder Agent → Reviewer Agent handoff
 # ---------------------------------------------------------------------------
 
@@ -263,6 +289,7 @@ class PipelineResult(BaseModel):
       1-3 = At least one Coder→Reviewer iteration was attempted.
     """
     logic_map: LogicMap
+    mapper_output: "MapperOutput | None" = None
     coder_output: CoderOutput | None = None
     reviewer_output: ReviewerOutput | None = None
     iterations: int = Field(..., ge=0, le=3, description="Number of Coder→Reviewer iterations")

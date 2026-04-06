@@ -1,0 +1,9 @@
+[
+  {
+    "stage": "coder",
+    "error_type": "ValueError",
+    "message": "Failed to parse Gemini response as JSON: {\n  \"generated_code\": \"def run_cobol_demo():\\n    \\\"\\\"\\\"Demonstrates basic COBOL-like syntax in Python.\\\"\\\"\\\"\\n    \\n    # Variable Declaration (simulated)\\n    user_name = \\\"Alice\\\"\\n    user_age = 25\\n    counter = 0\\n\\n    # Display initial header message\\n    print(\\\"*** COBOL Demo Program ***\\\")\\n    print(\\\"--------------------------\\\")\\n\\n    # Display user information\\n    print(f\\\"USER-NAME: {user_name}\\\")\\n    print(f\\\"USER-AGE: {user_age}\\\")\\n\\n    # Initialize COUNTER to 1\\n    count",
+    "recoverable": false,
+    "iteration": 1
+  }
+]

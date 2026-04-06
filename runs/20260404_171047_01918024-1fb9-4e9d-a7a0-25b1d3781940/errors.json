@@ -1,0 +1,9 @@
+[
+  {
+    "stage": "coder",
+    "error_type": "ValueError",
+    "message": "Failed to parse Groq response as JSON: Invalid control character at: line 2 column 22 (char 23)",
+    "recoverable": false,
+    "iteration": 1
+  }
+]

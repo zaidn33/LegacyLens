@@ -1,0 +1,207 @@
+{
+  "logic_map": {
+    "executive_summary": "The SIMPBATCH program calculates employee bonuses based on years of service and writes the results to a report file. The program reads employee records from a sequential file, applies bonus rules, and generates an output report.",
+    "business_objective": "Calculate employee bonuses and generate a report",
+    "inputs_and_outputs": {
+      "inputs": [
+        "EMP-FILE"
+      ],
+      "outputs": [
+        "RPT-FILE"
+      ],
+      "external_touchpoints": [
+        "EMPFILE",
+        "RPTFILE"
+      ]
+    },
+    "logic_dictionary": [
+      {
+        "legacy_name": "EMP-ID",
+        "proposed_modern_name": "Employee ID",
+        "meaning": "Unique identifier for the employee",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "EMP-NAME",
+        "proposed_modern_name": "Employee Name",
+        "meaning": "Name of the employee",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "EMP-BASE-SALARY",
+        "proposed_modern_name": "Base Salary",
+        "meaning": "Employee's base salary",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "EMP-YEARS-SERVICE",
+        "proposed_modern_name": "Years of Service",
+        "meaning": "Number of years the employee has been with the company",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-BONUS",
+        "proposed_modern_name": "Calculated Bonus",
+        "meaning": "Bonus amount calculated based on years of service",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-TOTAL",
+        "proposed_modern_name": "Total Compensation",
+        "meaning": "Total compensation including bonus",
+        "confidence": "High"
+      }
+    ],
+    "step_by_step_logic_flow": [
+      "Open input file EMP-FILE and output file RPT-FILE",
+      "Read the first employee record from EMP-FILE",
+      "Loop until end of file: calculate bonus and total compensation for each employee",
+      "Write the calculated bonus and total compensation to RPT-FILE",
+      "Read the next employee record from EMP-FILE",
+      "Close EMP-FILE and RPT-FILE"
+    ],
+    "business_rules": [
+      "If years of service is greater than 10, bonus is 15% of base salary",
+      "If years of service is between 5 and 10, bonus is 10% of base salary",
+      "If years of service is less than or equal to 5, bonus is 5% of base salary"
+    ],
+    "source_snippet_references": {},
+    "edge_cases": [
+      "Employee with no years of service",
+      "Employee with negative years of service",
+      "Employee with extremely high years of service"
+    ],
+    "dependencies": [
+      {
+        "reference_name": "EMPFILE",
+        "resolved_filename": "EMPFILE",
+        "status": "resolved"
+      },
+      {
+        "reference_name": "RPTFILE",
+        "resolved_filename": "RPTFILE",
+        "status": "resolved"
+      }
+    ],
+    "critical_constraints": [
+      "Bonus calculation rules must not change",
+      "Total compensation calculation must include bonus"
+    ],
+    "assumptions_and_ambiguities": {
+      "observed": [
+        "The program assumes that the input file EMP-FILE exists and is in the correct format"
+      ],
+      "inferred": [
+        "The program likely assumes that the output file RPT-FILE will be used for reporting purposes"
+      ],
+      "unknown": [
+        "The purpose of the FILLER fields in the RPT-REC record is unclear"
+      ]
+    },
+    "test_relevant_scenarios": [
+      "Test with an employee who has more than 10 years of service",
+      "Test with an employee who has between 5 and 10 years of service",
+      "Test with an employee who has less than or equal to 5 years of service"
+    ],
+    "confidence_assessment": {
+      "level": "High",
+      "rationale": "The program logic is straightforward and easy to follow, with clear business rules and calculations. The input and output files are well-defined, and the program assumes a simple and consistent format for the data."
+    }
+  },
+  "coder_output": {
+    "generated_code": "\n# Employee Bonus Calculator\n# This module calculates employee bonuses and generates a report.\n\ndef calculate_bonus(years_of_service, base_salary):\n    # Calculate bonus based on years of service\n    if years_of_service > 10:\n        return base_salary * 0.15\n    elif 5 <= years_of_service <= 10:\n        return base_salary * 0.10\n    else:\n        return base_salary * 0.05\n\ndef calculate_total_compensation(base_salary, bonus):\n    # Calculate total compensation including bonus\n    return base_salary + bonus\n\ndef generate_report(input_file, output_file):\n    # Open input and output files\n    with open(input_file, 'r') as emp_file, open(output_file, 'w') as rpt_file:\n        # Read the first employee record\n        for line in emp_file:\n            # Extract employee data\n            emp_id, emp_name, emp_base_salary, emp_years_service = line.strip().split(',')\n            emp_base_salary = float(emp_base_salary)\n            emp_years_service = int(emp_years_service)\n            \n            # Calculate bonus and total compensation\n            bonus = calculate_bonus(emp_years_service, emp_base_salary)\n            total_compensation = calculate_total_compensation(emp_base_salary, bonus)\n            \n            # Write the calculated bonus and total compensation to the report file\n            rpt_file.write(f'{emp_id},{emp_name},{emp_base_salary},{emp_years_service},{bonus},{total_compensation}\\n')\n",
+    "generated_tests": "\nimport pytest\n\ndef test_calculate_bonus():\n    # Test bonus calculation rules\n    assert calculate_bonus(11, 1000) == 150\n    assert calculate_bonus(7, 1000) == 100\n    assert calculate_bonus(3, 1000) == 50\n\ndef test_calculate_total_compensation():\n    # Test total compensation calculation\n    assert calculate_total_compensation(1000, 150) == 1150\n\ndef test_generate_report():\n    # Test report generation\n    input_file = 'test_input.txt'\n    output_file = 'test_output.txt'\n    \n    # Create test input file\n    with open(input_file, 'w') as emp_file:\n        emp_file.write('1,John Doe,1000,11\\n')\n        emp_file.write('2,Jane Doe,1000,7\\n')\n        emp_file.write('3,Bob Smith,1000,3\\n')\n    \n    # Generate report\n    generate_report(input_file, output_file)\n    \n    # Check report contents\n    with open(output_file, 'r') as rpt_file:\n        lines = rpt_file.readlines()\n        assert len(lines) == 3\n        assert lines[0].strip().split(',')[4] == '150.0'\n        assert lines[1].strip().split(',')[4] == '100.0'\n        assert lines[2].strip().split(',')[4] == '50.0'\n\ndef test_edge_cases():\n    # Test edge cases\n    assert calculate_bonus(0, 1000) == 50\n    assert calculate_bonus(-1, 1000) == 50\n    assert calculate_bonus(100, 1000) == 150\n",
+    "implementation_choices": "The implementation uses a simple text-based input and output format. The calculate_bonus function uses if-elif-else statements to apply the bonus calculation rules. The calculate_total_compensation function simply adds the bonus to the base salary. The generate_report function reads the input file line by line, extracts the employee data, calculates the bonus and total compensation, and writes the results to the output file.",
+    "logic_step_mapping": [
+      {
+        "function_or_test_name": "calculate_bonus",
+        "logic_step": "If years of service is greater than 10, bonus is 15% of base salary",
+        "notes": "Implemented as an if statement"
+      },
+      {
+        "function_or_test_name": "calculate_bonus",
+        "logic_step": "If years of service is between 5 and 10, bonus is 10% of base salary",
+        "notes": "Implemented as an elif statement"
+      },
+      {
+        "function_or_test_name": "calculate_bonus",
+        "logic_step": "If years of service is less than or equal to 5, bonus is 5% of base salary",
+        "notes": "Implemented as an else statement"
+      },
+      {
+        "function_or_test_name": "calculate_total_compensation",
+        "logic_step": "Total compensation calculation must include bonus",
+        "notes": "Implemented as a simple addition"
+      },
+      {
+        "function_or_test_name": "generate_report",
+        "logic_step": "Open input file EMP-FILE and output file RPT-FILE",
+        "notes": "Implemented using with statements"
+      },
+      {
+        "function_or_test_name": "generate_report",
+        "logic_step": "Read the first employee record from EMP-FILE",
+        "notes": "Implemented using a for loop"
+      },
+      {
+        "function_or_test_name": "generate_report",
+        "logic_step": "Loop until end of file: calculate bonus and total compensation for each employee",
+        "notes": "Implemented using a for loop"
+      },
+      {
+        "function_or_test_name": "generate_report",
+        "logic_step": "Write the calculated bonus and total compensation to RPT-FILE",
+        "notes": "Implemented using the write method"
+      },
+      {
+        "function_or_test_name": "generate_report",
+        "logic_step": "Close EMP-FILE and RPT-FILE",
+        "notes": "Implemented using the with statement, which automatically closes the files"
+      }
+    ],
+    "deferred_items": [
+      "The purpose of the FILLER fields in the RPT-REC record is unclear, so it was not implemented."
+    ]
+  },
+  "reviewer_output": {
+    "logic_parity_findings": "The generated code aligns with the Logic Map, implementing all critical constraints and business rules correctly. However, minor issues and edge cases were found.",
+    "defects": [
+      {
+        "description": "No validation for negative years of service in the calculate_bonus function",
+        "severity": "minor",
+        "logic_step": "calculate_bonus",
+        "suggested_fix": "Add a check for negative years of service and handle it according to the business rules"
+      },
+      {
+        "description": "No handling for extremely high years of service in the calculate_bonus function",
+        "severity": "minor",
+        "logic_step": "calculate_bonus",
+        "suggested_fix": "Add a check for extremely high years of service and handle it according to the business rules"
+      },
+      {
+        "description": "No error handling for file operations in the generate_report function",
+        "severity": "minor",
+        "logic_step": "generate_report",
+        "suggested_fix": "Add try-except blocks to handle potential file operation errors"
+      }
+    ],
+    "suggested_corrections": [
+      "Add input validation for years of service in the calculate_bonus function",
+      "Implement error handling for file operations in the generate_report function"
+    ],
+    "passed": true,
+    "confidence": {
+      "level": "High",
+      "rationale": "The generated code correctly implements all critical constraints and business rules. Although minor issues and edge cases were found, they do not affect the overall logic parity."
+    },
+    "known_limitations": [
+      "The purpose of the FILLER fields in the RPT-REC record is unclear and was not implemented"
+    ]
+  },
+  "iterations": 1,
+  "final_confidence": {
+    "level": "Medium",
+    "rationale": "Analyst confidence: High. Reviewer confidence: High. Pipeline completed in 1 iteration(s). 1 known limitation(s) documented."
+  },
+  "errors": []
+}

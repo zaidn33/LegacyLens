@@ -1,0 +1,9 @@
+[
+  {
+    "stage": "coder",
+    "error_type": "ValidationError",
+    "message": "1 validation error for CoderOutput\n  Input should be a valid dictionary or instance of CoderOutput [type=model_type, input_value=[{'generated_code': 'impo...employee_salary': '2f'}], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.12/v/model_type",
+    "recoverable": true,
+    "iteration": 1
+  }
+]

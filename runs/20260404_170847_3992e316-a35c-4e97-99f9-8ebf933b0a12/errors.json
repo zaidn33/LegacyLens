@@ -1,0 +1,9 @@
+[
+  {
+    "stage": "coder",
+    "error_type": "ValueError",
+    "message": "Groq HTTP 400: {\"error\":{\"message\":\"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\",\"type\":\"invalid_request_error\",\"code\":\"json_validate_failed\",\"failed_generation\":\"{\\n  \\\"generated_code\\\": \\\"\\\\n# Python implementation of the Logic Map\\\\ndef print_greeting(max_iterations):\\\\n    \\\"\\\"\\\"\\n    Prints 'HELLO, WORLD!' to the console a specified number of times.\\n\\n    Args:\\n        max_iterations (int): The maximum number of iterations.\\n\\n    Returns:\\n        None\\",
+    "recoverable": false,
+    "iteration": 1
+  }
+]

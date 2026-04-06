@@ -1,0 +1,98 @@
+{
+  "executive_summary": "This program calculates an employee bonus based on years of service and salary. It determines the bonus amount by applying a percentage to the employee's salary, with a higher percentage for employees with five or more years of service.",
+  "business_objective": "To calculate and award employee bonuses based on tenure and salary, incentivizing long-term employment.",
+  "inputs_and_outputs": {
+    "inputs": [
+      "EMP-NAME (PIC A(20))",
+      "YEARS-SERVICE (PIC 99)",
+      "SALARY (PIC 9(5))"
+    ],
+    "outputs": [
+      "BONUS (PIC 9(5)V99)",
+      "DISPLAY messages (BONUS APPROVED, STANDARD BONUS, BONUS AMOUNT)"
+    ],
+    "external_touchpoints": []
+  },
+  "logic_dictionary": [
+    {
+      "legacy_name": "EMP-NAME",
+      "proposed_modern_name": "EmployeeName",
+      "meaning": "The name of the employee.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "YEARS-SERVICE",
+      "proposed_modern_name": "YearsOfService",
+      "meaning": "The number of years the employee has been with the company.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "SALARY",
+      "proposed_modern_name": "EmployeeSalary",
+      "meaning": "The current salary of the employee.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "BONUS",
+      "proposed_modern_name": "CalculatedBonus",
+      "meaning": "The calculated bonus amount for the employee.",
+      "confidence": "High"
+    }
+  ],
+  "step_by_step_logic_flow": [
+    "Start program execution.",
+    "Initialize employee data (name, years of service, salary).",
+    "Display header and employee details.",
+    "Check if YEARS-SERVICE is greater than or equal to 5.",
+    "If true, calculate BONUS as SALARY * 0.10 and display 'BONUS APPROVED'.",
+    "If false, calculate BONUS as SALARY * 0.05 and display 'STANDARD BONUS'.",
+    "Display the calculated BONUS AMOUNT.",
+    "Display 'PROCESS COMPLETE'.",
+    "End program execution."
+  ],
+  "business_rules": [
+    "If an employee has 5 or more years of service, their bonus is 10% of their salary.",
+    "If an employee has less than 5 years of service, their bonus is 5% of their salary."
+  ],
+  "source_snippet_references": {},
+  "edge_cases": [
+    "What happens if SALARY is zero?",
+    "What happens if YEARS-SERVICE is zero or negative (though PIC 99 implies non-negative)?",
+    "Handling of very large salaries that might exceed PIC 9(5)V99 capacity after multiplication (unlikely with current percentages)."
+  ],
+  "dependencies": [],
+  "critical_constraints": [
+    "The bonus calculation must adhere to the specified percentages (10% for >= 5 years, 5% for < 5 years).",
+    "The output format for the bonus amount must be maintained (PIC 9(5)V99)."
+  ],
+  "assumptions_and_ambiguities": {
+    "observed": [
+      "The program assumes that YEARS-SERVICE will always be a non-negative integer due to PIC 99.",
+      "The program assumes SALARY is a non-negative integer.",
+      "The bonus calculation uses fixed percentages (0.10 and 0.05)."
+    ],
+    "inferred": [
+      "The program is intended to run for a single employee at a time.",
+      "The bonus is a monetary value.",
+      "The program is a standalone batch process."
+    ],
+    "unknown": [
+      "What is the source of the employee data (EMP-NAME, YEARS-SERVICE, SALARY)?",
+      "Are there any other conditions that might affect bonus eligibility?",
+      "What is the maximum value for YEARS-SERVICE that the system is designed to handle?",
+      "What is the expected behavior if the input data is invalid (e.g., non-numeric characters in numeric fields, though COBOL might handle this with specific settings)?"
+    ]
+  },
+  "test_relevant_scenarios": [
+    "Test with YEARS-SERVICE = 5, SALARY = 50000 (Expected BONUS = 5000.00).",
+    "Test with YEARS-SERVICE = 4, SALARY = 50000 (Expected BONUS = 2500.00).",
+    "Test with YEARS-SERVICE = 10, SALARY = 60000 (Expected BONUS = 6000.00).",
+    "Test with YEARS-SERVICE = 0, SALARY = 30000 (Expected BONUS = 1500.00).",
+    "Test with SALARY = 0, YEARS-SERVICE = 7 (Expected BONUS = 0.00).",
+    "Test with SALARY = 0, YEARS-SERVICE = 2 (Expected BONUS = 0.00)."
+  ],
+  "confidence_assessment": {
+    "level": "High",
+    "rationale": "The logic is straightforward and directly maps to the provided COBOL code. Variable names and their usage are clear, and the business rules are explicitly defined within the conditional statements."
+  }
+}

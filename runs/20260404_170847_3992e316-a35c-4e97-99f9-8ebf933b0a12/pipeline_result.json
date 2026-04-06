@@ -1,0 +1,99 @@
+{
+  "logic_map": {
+    "executive_summary": "The provided COBOL program, HELLO-WORLD, is designed to print a greeting message to the console a specified number of times. The program utilizes a counter to track the number of iterations and stops once the counter reaches a predefined maximum value.",
+    "business_objective": "Print 'HELLO, WORLD!' to the console 5 times",
+    "inputs_and_outputs": {
+      "inputs": [],
+      "outputs": [
+        "HELLO, WORLD!"
+      ],
+      "external_touchpoints": [
+        "console"
+      ]
+    },
+    "logic_dictionary": [
+      {
+        "legacy_name": "WS-MESSAGE",
+        "proposed_modern_name": "greetingMessage",
+        "meaning": "The message to be printed to the console",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-COUNTER",
+        "proposed_modern_name": "iterationCounter",
+        "meaning": "The current iteration number",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "WS-MAX",
+        "proposed_modern_name": "maxIterations",
+        "meaning": "The maximum number of iterations",
+        "confidence": "High"
+      }
+    ],
+    "step_by_step_logic_flow": [
+      "1. Initialize the iteration counter (WS-COUNTER) to 0 and the maximum iterations (WS-MAX) to 5",
+      "2. Initialize the greeting message (WS-MESSAGE) to 'HELLO, WORLD!'",
+      "3. Perform the PRINT-PARA procedure until the iteration counter equals the maximum iterations",
+      "4. Within PRINT-PARA, increment the iteration counter by 1",
+      "5. Display the current iteration number and the greeting message to the console",
+      "6. Stop the program once the iteration counter reaches the maximum iterations"
+    ],
+    "business_rules": [
+      "The program must print the greeting message to the console",
+      "The program must stop once the maximum number of iterations is reached"
+    ],
+    "source_snippet_references": {},
+    "edge_cases": [
+      "The maximum iterations (WS-MAX) is set to 0",
+      "The maximum iterations (WS-MAX) is set to a negative number"
+    ],
+    "dependencies": [
+      {
+        "reference_name": "console",
+        "resolved_filename": null,
+        "status": "unresolved"
+      }
+    ],
+    "critical_constraints": [
+      "The program must print the greeting message to the console exactly 5 times"
+    ],
+    "assumptions_and_ambiguities": {
+      "observed": [
+        "The program uses a counter to track the number of iterations",
+        "The program stops once the counter reaches a predefined maximum value"
+      ],
+      "inferred": [
+        "The program is designed to run in a console environment"
+      ],
+      "unknown": [
+        "The behavior of the program when the maximum iterations is set to 0 or a negative number"
+      ]
+    },
+    "test_relevant_scenarios": [
+      "Test the program with the default maximum iterations (5)",
+      "Test the program with a maximum iterations value of 0",
+      "Test the program with a maximum iterations value of a negative number"
+    ],
+    "confidence_assessment": {
+      "level": "High",
+      "rationale": "The program logic is straightforward and easy to understand, with clear variable names and a simple control flow. However, there are some edge cases that require further testing and clarification."
+    }
+  },
+  "coder_output": null,
+  "reviewer_output": null,
+  "iterations": 1,
+  "final_confidence": {
+    "level": "Low",
+    "rationale": "Analyst confidence: High. Reviewer did not complete \u2014 confidence cannot be assessed. Pipeline ran 1 iteration(s) before failure."
+  },
+  "errors": [
+    {
+      "stage": "coder",
+      "error_type": "ValueError",
+      "message": "Groq HTTP 400: {\"error\":{\"message\":\"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\",\"type\":\"invalid_request_error\",\"code\":\"json_validate_failed\",\"failed_generation\":\"{\\n  \\\"generated_code\\\": \\\"\\\\n# Python implementation of the Logic Map\\\\ndef print_greeting(max_iterations):\\\\n    \\\"\\\"\\\"\\n    Prints 'HELLO, WORLD!' to the console a specified number of times.\\n\\n    Args:\\n        max_iterations (int): The maximum number of iterations.\\n\\n    Returns:\\n        None\\",
+      "recoverable": false,
+      "iteration": 1
+    }
+  ]
+}
