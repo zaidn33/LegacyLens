@@ -1,0 +1,201 @@
+{
+  "logic_map": {
+    "executive_summary": "This COBOL program, HELLOTEST, serves as a basic demonstration of procedural logic. It displays user information and iterates through a simple counter loop, concluding with an age-based status check.",
+    "business_objective": "To demonstrate fundamental COBOL programming constructs including variable declaration, display statements, loops, and conditional logic.",
+    "inputs_and_outputs": {
+      "inputs": [],
+      "outputs": [
+        "Console output of program title, user name, user age, loop counter, and adult/minor status."
+      ],
+      "external_touchpoints": []
+    },
+    "logic_dictionary": [
+      {
+        "legacy_name": "USER-NAME",
+        "proposed_modern_name": "UserName",
+        "meaning": "A 20-character alphanumeric field storing the user's name.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "USER-AGE",
+        "proposed_modern_name": "UserAge",
+        "meaning": "A 2-digit numeric field storing the user's age.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "COUNTER",
+        "proposed_modern_name": "LoopCounter",
+        "meaning": "A single-digit numeric field used to control the loop iteration.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "MAIN-PARA",
+        "proposed_modern_name": "MainParagraph",
+        "meaning": "The main entry point and procedural block of the program.",
+        "confidence": "High"
+      }
+    ],
+    "step_by_step_logic_flow": [
+      "Start program execution at MAIN-PARA.",
+      "Display the program title '=== LEGACY LENS TEST FILE ==='.",
+      "Display the current value of USER-NAME.",
+      "Display the current value of USER-AGE.",
+      "Initialize COUNTER to 1.",
+      "Start a loop that continues as long as COUNTER is less than or equal to 3.",
+      "Inside the loop, display 'RUN NUMBER: ' followed by the current value of COUNTER.",
+      "Increment COUNTER by 1.",
+      "Check if COUNTER is greater than 3. If true, exit the loop.",
+      "If USER-AGE is greater than or equal to 18, display 'STATUS: ADULT'.",
+      "Otherwise (if USER-AGE is less than 18), display 'STATUS: MINOR'.",
+      "Display 'PROGRAM COMPLETE.'.",
+      "Terminate the program execution."
+    ],
+    "business_rules": [
+      "The program will display a fixed header message.",
+      "The program will display the initialized USER-NAME and USER-AGE.",
+      "The program will loop exactly 3 times, displaying the current run number in each iteration.",
+      "If the USER-AGE is 18 or greater, the program will output 'STATUS: ADULT'.",
+      "If the USER-AGE is less than 18, the program will output 'STATUS: MINOR'."
+    ],
+    "source_snippet_references": {},
+    "edge_cases": [
+      "What happens if USER-AGE is exactly 18? (Covered by >= rule).",
+      "What happens if USER-AGE is a non-numeric value? (COBOL PIC 9 would typically error or zero-fill depending on compiler settings, but not explicitly handled here).",
+      "What happens if USER-NAME is longer than 20 characters? (Truncation or error depending on compiler).",
+      "What happens if COUNTER exceeds its PIC 9 limit? (Unlikely with the current loop condition)."
+    ],
+    "dependencies": [],
+    "critical_constraints": [
+      "The program must run on a COBOL compiler.",
+      "Console output is the only form of interaction/reporting.",
+      "Fixed initial values for USER-NAME, USER-AGE, and COUNTER."
+    ],
+    "assumptions_and_ambiguities": {
+      "observed": [
+        "The program uses fixed initial values for USER-NAME, USER-AGE, and COUNTER.",
+        "The loop condition is `COUNTER > 3` and the increment is `BY 1`."
+      ],
+      "inferred": [
+        "The `DISPLAY` statements are intended for console output.",
+        "The `STOP RUN` statement signifies program termination."
+      ],
+      "unknown": [
+        "The specific COBOL compiler and its behavior for data type violations (e.g., non-numeric USER-AGE).",
+        "The intended purpose or context of this demonstration program."
+      ]
+    },
+    "test_relevant_scenarios": [
+      "Execute the program with default values (USER-AGE = 21) to verify all outputs and the loop.",
+      "Manually alter USER-AGE to a value less than 18 (e.g., 17) and verify 'STATUS: MINOR' is displayed.",
+      "Manually alter USER-AGE to a value greater than or equal to 18 (e.g., 18, 50) and verify 'STATUS: ADULT' is displayed.",
+      "Verify the loop runs exactly 3 times for 'RUN NUMBER: 1', 'RUN NUMBER: 2', 'RUN NUMBER: 3'."
+    ],
+    "confidence_assessment": {
+      "level": "High",
+      "rationale": "The COBOL code is straightforward and uses standard syntax. The logic is simple and directly maps to the provided code snippets, with high confidence in variable meanings and control flow interpretation."
+    }
+  },
+  "mapper_output": {
+    "variables": [
+      {
+        "cobol_name": "USER-NAME",
+        "python_name": "user_name",
+        "python_type": "str",
+        "initial_value": "\"ZAID\"",
+        "pic_clause": "PIC A(20)",
+        "level": "01"
+      },
+      {
+        "cobol_name": "USER-AGE",
+        "python_name": "user_age",
+        "python_type": "int",
+        "initial_value": "21",
+        "pic_clause": "PIC 99",
+        "level": "01"
+      },
+      {
+        "cobol_name": "COUNTER",
+        "python_name": "counter",
+        "python_type": "int",
+        "initial_value": "0",
+        "pic_clause": "PIC 9",
+        "level": "01"
+      }
+    ],
+    "global_state_summary": "Extracted 3 variables from WORKING-STORAGE SECTION."
+  },
+  "coder_output": {
+    "generated_code": "# --- Global State Initializations ---\nuser_name = \"ZAID\"\nuser_age = 21\ncounter = 0\n\nprint(\"=== LEGACY LENS TEST FILE ===\")\nprint(f\"NAME: {user_name}\")\nprint(f\"AGE: {user_age}\")\n\nfor counter in range(1, 4):\n    print(f\"RUN NUMBER: {counter}\")\n\nif user_age >= 18:\n    print(\"STATUS: ADULT\")\nelse:\n    print(\"STATUS: MINOR\")\n\nprint(\"PROGRAM COMPLETE.\")\n# STOP RUN is implicitly handled by the end of the script execution.",
+    "generated_tests": "import pytest\n\n# Mocking print statements to capture output\nfrom unittest.mock import patch\n\n# --- Global State --- (as defined in the original code)\nuser_name = \"ZAID\"\nuser_age = 21\ncounter = 0\n\ndef test_global_state_initialization():\n    assert user_name == \"ZAID\"\n    assert user_age == 21\n    assert counter == 0\n\n@patch('builtins.print')\ndef test_script_output(mock_print):\n    # Re-execute the script logic within the test context\n    # This is a simplified approach assuming the script can be run sequentially\n    # In a real-world scenario, you might refactor the code into functions\n    \n    # Simulate the initial prints\n    print(f\"=== LEGACY LENS TEST FILE ===\")\n    print(f\"NAME: {user_name}\")\n    print(f\"AGE: {user_age}\")\n\n    # Simulate the loop\n    for counter_loop in range(1, 4):\n        print(f\"RUN NUMBER: {counter_loop}\")\n\n    # Simulate the conditional print\n    if user_age >= 18:\n        print(\"STATUS: ADULT\")\n    else:\n        print(\"STATUS: MINOR\")\n\n    print(\"PROGRAM COMPLETE.\")\n\n    # Assertions based on expected print calls\n    expected_calls = [\n        \"=== LEGACY LENS TEST FILE ===\",\n        f\"NAME: {user_name}\",\n        f\"AGE: {user_age}\",\n        \"RUN NUMBER: 1\",\n        \"RUN NUMBER: 2\",\n        \"RUN NUMBER: 3\",\n        \"STATUS: ADULT\",\n        \"PROGRAM COMPLETE.\"\n    ]\n\n    # Check if all expected calls were made in order\n    assert mock_print.call_args_list.call_count == len(expected_calls)\n    for i, call in enumerate(expected_calls):\n        mock_print.assert_any_call(call)\n\n# Note: Since the provided code is a script with side effects (prints) and global state manipulation,\n# testing it directly involves capturing these side effects. \n# For more complex scenarios, refactoring the code into functions would be beneficial for testability.\n",
+    "implementation_choices": "Translated COBOL DISPLAY to Python print. Used a Python for loop to emulate the PERFORM VARYING UNTIL loop. Conditional logic for age status is directly translated. STOP RUN is implicitly handled by script termination.",
+    "logic_step_mapping": [
+      {
+        "function_or_test_name": "display_header",
+        "logic_step": "DISPLAY \"=== LEGACY LENS TEST FILE ===\"",
+        "notes": "Prints a fixed header message."
+      },
+      {
+        "function_or_test_name": "display_user_info",
+        "logic_step": "DISPLAY \"NAME: \" USER-NAME\nDISPLAY \"AGE: \" USER-AGE",
+        "notes": "Displays the initialized USER-NAME and USER-AGE."
+      },
+      {
+        "function_or_test_name": "loop_and_display_run_number",
+        "logic_step": "PERFORM VARYING COUNTER FROM 1 BY 1 UNTIL COUNTER > 3\n    DISPLAY \"RUN NUMBER: \" COUNTER\nEND-PERFORM",
+        "notes": "Loops 3 times, displaying the current run number in each iteration."
+      },
+      {
+        "function_or_test_name": "check_age_status",
+        "logic_step": "IF USER-AGE >= 18\n    DISPLAY \"STATUS: ADULT\"\nELSE\n    DISPLAY \"STATUS: MINOR\"\nEND-IF",
+        "notes": "Outputs 'STATUS: ADULT' if USER-AGE is 18 or greater, otherwise outputs 'STATUS: MINOR'."
+      },
+      {
+        "function_or_test_name": "display_completion_message",
+        "logic_step": "DISPLAY \"PROGRAM COMPLETE.\"",
+        "notes": "Displays a completion message."
+      },
+      {
+        "function_or_test_name": "stop_run",
+        "logic_step": "STOP RUN.",
+        "notes": "Terminates the program execution."
+      }
+    ],
+    "deferred_items": []
+  },
+  "reviewer_output": {
+    "logic_parity_findings": "The Python code generally follows the logic map. However, there are discrepancies in variable initialization and loop behavior. The `counter` is initialized to 0 in the Python code, but the logic map implies it should start at 1 for the loop. The loop in Python uses `range(1, 4)` which correctly iterates 3 times, but the initialization of `counter` to 0 before the loop is not aligned with the COBOL logic where `COUNTER` is initialized to 1 before the loop starts and then incremented. The display of USER-NAME and USER-AGE also uses a different format than implied by the logic map.",
+    "defects": [
+      {
+        "description": "The `counter` variable is initialized to 0 in the Python code, but the COBOL logic map implies it should be initialized to 1 before the loop begins to match the `PERFORM VARYING COUNTER FROM 1 BY 1` construct.",
+        "severity": "minor",
+        "logic_step": "loop_and_display_run_number",
+        "suggested_fix": "Initialize `counter` to 1 before the loop, or adjust the loop to start from 0 and increment before printing if that's the intended Pythonic way to emulate the COBOL logic. Given the `range(1, 4)` usage, the initialization to 0 is redundant and potentially misleading."
+      },
+      {
+        "description": "The Python code prints 'NAME: {user_name}' and 'AGE: {user_age}', while the logic map implies a direct display of USER-NAME and USER-AGE. The COBOL DISPLAY statement for variables typically just outputs the variable's value without a preceding label unless explicitly coded.",
+        "severity": "minor",
+        "logic_step": "display_user_info",
+        "suggested_fix": "Modify the print statements to directly display the variable values without labels, e.g., `print(user_name)` and `print(user_age)`, if the intention is to strictly mirror COBOL's variable display behavior. However, the current Pythonic approach is more readable."
+      }
+    ],
+    "suggested_corrections": [
+      "Adjust the initialization of the `counter` variable to 1 to better align with the COBOL `PERFORM VARYING` statement's starting point.",
+      "Consider if the labels 'NAME:' and 'AGE:' in the Python output are intended or if the output should strictly be the variable values as per COBOL's `DISPLAY` behavior for variables."
+    ],
+    "passed": true,
+    "confidence": {
+      "level": "High",
+      "rationale": "The Python code successfully implements the core business rules and logic flow described in the Logic Map. The critical constraints are met. Minor discrepancies in variable initialization and output formatting were identified and are considered low severity."
+    },
+    "known_limitations": [
+      "The Python code does not explicitly handle potential COBOL-specific data type issues like non-numeric input for `USER-AGE` or overflow for `COUNTER`, as these were noted as edge cases not explicitly handled in the logic map.",
+      "The translation of COBOL's `PIC` clauses to Python types is an interpretation; exact behavior for edge cases might differ."
+    ]
+  },
+  "iterations": 1,
+  "final_confidence": {
+    "level": "Medium",
+    "rationale": "Analyst confidence: High. Reviewer confidence: High. Pipeline completed in 1 iteration(s). 2 known limitation(s) documented."
+  },
+  "errors": []
+}

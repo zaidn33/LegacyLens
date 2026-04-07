@@ -1,30 +1,30 @@
 /* =====================================================
    LegacyLens — Global Styles
-   Dark-mode terminal aesthetic per PRD
+   Monochrome black & white premium aesthetic
    ===================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ----- Design Tokens ----- */
 :root {
-  /* Surface palette */
-  --bg-primary: #0a1128;
-  --bg-secondary: #111827;
-  --bg-tertiary: #1a2236;
-  --bg-card: #151d2e;
-  --bg-card-hover: #1c2640;
-  --bg-input: #0d1321;
+  /* Surface palette — pure black */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #141414;
+  --bg-card: #0d0d0d;
+  --bg-card-hover: #1a1a1a;
+  --bg-input: #080808;
 
-  /* Border palette */
-  --border-primary: #1e2d4a;
-  --border-secondary: #2a3f6b;
-  --border-accent: #00e5ff;
+  /* Border palette — grayscale */
+  --border-primary: #1e1e1e;
+  --border-secondary: #2e2e2e;
+  --border-accent: #ffffff;
 
-  /* Text palette */
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-accent: #60a5fa;
+  /* Text palette — white spectrum */
+  --text-primary: #f0f0f0;
+  --text-secondary: #999999;
+  --text-muted: #555555;
+  --text-accent: #ffffff;
 
   /* Status colors */
   --status-completed: #22c55e;
@@ -33,10 +33,10 @@
   --status-error-bg: rgba(245, 158, 11, 0.12);
   --status-failed: #ef4444;
   --status-failed-bg: rgba(239, 68, 68, 0.12);
-  --status-processing: #00e5ff;
-  --status-processing-bg: rgba(0, 229, 255, 0.12);
-  --status-pending: #64748b;
-  --status-pending-bg: rgba(100, 116, 139, 0.12);
+  --status-processing: #ffffff;
+  --status-processing-bg: rgba(255, 255, 255, 0.08);
+  --status-pending: #555555;
+  --status-pending-bg: rgba(85, 85, 85, 0.12);
 
   /* Confidence colors */
   --confidence-high: #22c55e;
@@ -51,13 +51,13 @@
   --severity-critical-bg: rgba(239, 68, 68, 0.10);
   --severity-major: #f59e0b;
   --severity-major-bg: rgba(245, 158, 11, 0.10);
-  --severity-minor: #64748b;
-  --severity-minor-bg: rgba(100, 116, 139, 0.10);
+  --severity-minor: #555555;
+  --severity-minor-bg: rgba(85, 85, 85, 0.10);
 
-  /* Accent */
-  --accent-blue: #00e5ff;
-  --accent-purple: #ffffff;
-  --accent-gradient: linear-gradient(135deg, #00e5ff, #ffffff);
+  /* Accent — monochrome */
+  --accent-blue: #ffffff;
+  --accent-purple: #999999;
+  --accent-gradient: linear-gradient(135deg, #ffffff, #999999);
 
   /* Spacing */
   --space-xs: 4px;
@@ -68,16 +68,16 @@
   --space-2xl: 48px;
 
   /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 20px rgba(0, 229, 255, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.8);
+  --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.06);
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -115,23 +115,23 @@ a {
   transition: color var(--transition-fast);
 }
 a:hover {
-  color: #93c5fd;
+  color: #cccccc;
 }
 
 /* ----- Scrollbar ----- */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: #0a0a0a;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-secondary);
+  background: #2e2e2e;
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3d5a9e;
+  background: #444444;
 }
 
 /* ----- Utility Classes ----- */

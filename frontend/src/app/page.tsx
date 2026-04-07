@@ -15,7 +15,6 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
-  // Fetch jobs on mount + poll every 3s
   const fetchJobs = useCallback(async () => {
     try {
       const data = await listJobs(1, 50);
@@ -52,67 +51,168 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
+      {/* Background layers */}
+      <div className={styles.bgImage} />
+      <div className={styles.bgOverlay} />
+      <div className={styles.bgGrid} />
+
+      {/* Navbar */}
+      <header className={styles.navbar}>
         <div className={styles.brand}>
-          <span className={styles.logo}>👓</span>
-          <h1 className={styles.title}>LegacyLens</h1>
+          <span className={styles.dotRed} />
+          <span className={styles.dotYellow} />
+          <span className={styles.dotGreen} />
+          <h1 className={styles.logoText}>LegacyLens</h1>
         </div>
         <button 
           onClick={() => logoutUser()} 
-          style={{ background: 'transparent', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+          className={styles.logoutBtn}
         >
           Logout
         </button>
       </header>
 
-      <main className={`container ${styles.main}`}>
+      <main className={styles.main}>
         {/* Hero Section */}
-        <section className={styles.heroSection}>
+        <section className={styles.hero}>
           <h2 className={styles.heroTitle}>
             Modernize COBOL<br />to Python Automatically
           </h2>
-          <p className={styles.heroDescription}>
-            Preserve business logic, maintain traceability, and accelerate your mainframe migration with intelligent code conversion.
+          <p className={styles.heroSub}>
+            Preserve business logic, maintain traceability, and accelerate your
+            mainframe migration with intelligent code conversion.
           </p>
-          <div className={styles.codeBadge}>
-            <span className={styles.pillCobol}>[COBOL]</span>
-            <span className={styles.pillArrow}>→</span>
-            <span className={styles.pillPython}>[Python]</span>
+
+          {/* Code transformation visual */}
+          <div className={styles.codeTransform}>
+            <span className={styles.cobolPill}>
+              <code>DISPLAY &quot;Hello&quot;</code>
+            </span>
+            <span className={styles.transformArrow}>→</span>
+            <span className={styles.pythonPill}>
+              <code>print(&quot;Hello&quot;)</code>
+            </span>
           </div>
         </section>
 
-        {/* Upload */}
+        {/* Upload Section */}
         <section className={styles.uploadSection}>
-          <div className={styles.uploadWrapper}>
+          <div className={styles.uploadGlass}>
             <FileUpload onUpload={handleUpload} disabled={isUploading} />
             {error && <p className={styles.error}>{error}</p>}
           </div>
         </section>
 
-        {/* Features */}
-        <section className={styles.featuresSection}>
-          <div className={styles.featureCard}>
-            <span className={styles.featureIcon}>🧬</span>
-            <h4>Logic Preservation</h4>
-            <p>Maps native logic patterns explicitly before code generation.</p>
-          </div>
-          <div className={styles.featureCard}>
-            <span className={styles.featureIcon}>📊</span>
-            <h4>Full Traceability</h4>
-            <p>Maintains parity records from mainframe source to target Python.</p>
-          </div>
-          <div className={styles.featureCard}>
-            <span className={styles.featureIcon}>⚡</span>
-            <h4>Intelligent Analysis</h4>
-            <p>Uses multi-agent refinement for confident dependency resolution.</p>
+        {/* How It Works */}
+        <section className={styles.howSection}>
+          <h3 className={styles.sectionTitle}>How It Works</h3>
+          <div className={styles.stepsGrid}>
+            <div className={styles.stepCard}>
+              <div className={styles.stepIcon}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="12" y1="18" x2="12" y2="12"/>
+                  <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+              </div>
+              <span className={styles.stepNum}>01</span>
+              <h4 className={styles.stepTitle}>Upload COBOL</h4>
+              <p className={styles.stepDesc}>
+                Drop your .cbl, .cob, or .cpy files. We parse every division, section, and paragraph.
+              </p>
+            </div>
+            <div className={styles.stepCard}>
+              <div className={styles.stepIcon}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <circle cx="12" cy="17" r=".5"/>
+                </svg>
+              </div>
+              <span className={styles.stepNum}>02</span>
+              <h4 className={styles.stepTitle}>AI Analysis</h4>
+              <p className={styles.stepDesc}>
+                Our engine maps business rules, control flow, data structures, and edge cases.
+              </p>
+            </div>
+            <div className={styles.stepCard}>
+              <div className={styles.stepIcon}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <span className={styles.stepNum}>03</span>
+              <h4 className={styles.stepTitle}>Get Python</h4>
+              <p className={styles.stepDesc}>
+                Download production-ready Python with full traceability back to original COBOL lines.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Job List */}
-        <section className={`card ${styles.listSection}`}>
-          <div className={styles.listHeader}>
-            <h2 className={styles.listTitle}>Pipeline Runs</h2>
-            <span className={styles.listCount}>{jobs.length} jobs</span>
+        {/* Enterprise-Grade Conversion */}
+        <section className={styles.enterpriseSection}>
+          <h3 className={styles.sectionTitle}>Enterprise-Grade Conversion</h3>
+          <p className={styles.sectionSub}>
+            Built for the complexity of real-world mainframe applications.
+          </p>
+          <div className={styles.featureGrid}>
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <h4 className={styles.featureTitle}>Business Logic Preserved</h4>
+              <p className={styles.featureDesc}>
+                Every rule, condition, and calculation mapped with full fidelity.
+              </p>
+            </div>
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+              </div>
+              <h4 className={styles.featureTitle}>Fast Conversion</h4>
+              <p className={styles.featureDesc}>
+                Thousands of lines processed in seconds, not months of manual rewriting.
+              </p>
+            </div>
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <h4 className={styles.featureTitle}>Full Traceability</h4>
+              <p className={styles.featureDesc}>
+                Line-by-line mapping from COBOL source to Python output.
+              </p>
+            </div>
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+              </div>
+              <h4 className={styles.featureTitle}>Confidence Scoring</h4>
+              <p className={styles.featureDesc}>
+                AI-powered confidence metrics for every converted module.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Pipeline Runs */}
+        <section className={styles.runsSection}>
+          <div className={styles.runsHeader}>
+            <h3 className={styles.runsTitle}>Pipeline Runs</h3>
+            <span className={styles.runsCount}>{jobs.length} jobs</span>
           </div>
           <JobTable jobs={jobs} />
         </section>
