@@ -4,11 +4,11 @@ LegacyLens is an AI-powered agentic modernization pipeline designed to translate
 
 ## Technical Details
 
-- **Supported Python Version:** `Python 3.11` to `3.14.x`
-- **Frontend Stack:** Next.js 15, React
-- **LLM Pipeline:** LangGraph, LangChain, IBM Granite / OpenAI
-- **Persistence:** Local SQLite, automatically scalable to LibSQL via Turso Cloud
-- **Authentication:** JWT HttpOnly securely scoped through a unified proxy middleware
+Supported Python Version: 3.11-slim
+Frontend Stack: Next.js 16.2.1, React 19.2.4, TypeScript, Prism
+LLM Pipeline: LangGraph, Google Gemini (1.5 Pro/Flash), IBM Granite support
+Persistence: SQLite / Turso (LibSQL)
+Authentication: JWT (JSON Web Tokens), bcrypt hashing (passlib)
 
 ## Getting Started
 
