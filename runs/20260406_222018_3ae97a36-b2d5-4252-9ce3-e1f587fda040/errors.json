@@ -1,0 +1,16 @@
+[
+  {
+    "stage": "mapper",
+    "error_type": "ValueError",
+    "message": "Gemini HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite\\nPlease retry in 47.362837847s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n",
+    "recoverable": true,
+    "iteration": null
+  },
+  {
+    "stage": "coder",
+    "error_type": "ValueError",
+    "message": "Gemini HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite\\nPlease retry in 41.865057004s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n",
+    "recoverable": false,
+    "iteration": 1
+  }
+]

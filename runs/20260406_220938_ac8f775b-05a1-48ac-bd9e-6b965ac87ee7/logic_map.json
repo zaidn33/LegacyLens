@@ -1,0 +1,191 @@
+{
+  "executive_summary": "This program processes employee payroll by calculating pay based on hours worked and hourly rates, applying taxes and deductions, and determining net pay. It also handles bonuses based on performance ratings and validates the final net pay before displaying a summary.",
+  "business_objective": "To accurately calculate and report employee net pay, including gross pay, taxes, deductions, and bonuses, based on defined business rules.",
+  "inputs_and_outputs": {
+    "inputs": [
+      "EMPLOYEE-NAME",
+      "EMPLOYEE-ID",
+      "DEPARTMENT-CODE",
+      "HOURS-WORKED",
+      "HOURLY-RATE",
+      "PERFORMANCE-RATING"
+    ],
+    "outputs": [
+      "REGULAR-HOURS",
+      "OVERTIME-HOURS",
+      "REGULAR-PAY",
+      "OVERTIME-PAY",
+      "GROSS-PAY",
+      "TAX-RATE",
+      "TAX-AMOUNT",
+      "BENEFIT-DEDUCTION",
+      "BONUS-AMOUNT",
+      "NET-PAY",
+      "PAY-STATUS",
+      "WARNING-MESSAGE"
+    ],
+    "external_touchpoints": [
+      "DISPLAY (Console Output)"
+    ]
+  },
+  "logic_dictionary": [
+    {
+      "legacy_name": "EMPLOYEE-NAME",
+      "proposed_modern_name": "EmployeeName",
+      "meaning": "The full name of the employee.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "EMPLOYEE-ID",
+      "proposed_modern_name": "EmployeeId",
+      "meaning": "A unique identifier for the employee.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "DEPARTMENT-CODE",
+      "proposed_modern_name": "DepartmentCode",
+      "meaning": "Code representing the employee's department.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "HOURS-WORKED",
+      "proposed_modern_name": "HoursWorked",
+      "meaning": "Total hours the employee has worked in the pay period.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "HOURLY-RATE",
+      "proposed_modern_name": "HourlyRate",
+      "meaning": "The employee's base pay rate per hour.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "REGULAR-HOURS",
+      "proposed_modern_name": "RegularHours",
+      "meaning": "Hours worked up to the standard 40-hour week.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "OVERTIME-HOURS",
+      "proposed_modern_name": "OvertimeHours",
+      "meaning": "Hours worked beyond the standard 40-hour week.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "REGULAR-PAY",
+      "proposed_modern_name": "RegularPay",
+      "meaning": "Pay calculated for regular hours.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "OVERTIME-PAY",
+      "proposed_modern_name": "OvertimePay",
+      "meaning": "Pay calculated for overtime hours (at 1.5x rate).",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "GROSS-PAY",
+      "proposed_modern_name": "GrossPay",
+      "meaning": "Total pay before taxes and deductions.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "TAX-RATE",
+      "proposed_modern_name": "TaxRate",
+      "meaning": "The applicable tax rate based on gross pay.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "TAX-AMOUNT",
+      "proposed_modern_name": "TaxAmount",
+      "meaning": "The calculated amount of tax to be deducted.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "BENEFIT-DEDUCTION",
+      "proposed_modern_name": "BenefitDeduction",
+      "meaning": "Fixed deduction for employee benefits.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "BONUS-AMOUNT",
+      "proposed_modern_name": "BonusAmount",
+      "meaning": "Additional payment based on performance rating.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "NET-PAY",
+      "proposed_modern_name": "NetPay",
+      "meaning": "The final amount to be paid to the employee after all calculations.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "PAY-STATUS",
+      "proposed_modern_name": "PayStatus",
+      "meaning": "Indicates the status of the payroll calculation (e.g., APPROVED, HOLD, ERROR).",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "PERFORMANCE-RATING",
+      "proposed_modern_name": "PerformanceRating",
+      "meaning": "Employee's performance rating used for bonus calculation.",
+      "confidence": "High"
+    },
+    {
+      "legacy_name": "WARNING-MESSAGE",
+      "proposed_modern_name": "WarningMessage",
+      "meaning": "A message indicating any issues or status of the payroll run.",
+      "confidence": "High"
+    }
+  ],
+  "step_by_step_logic_flow": [
+    "Start the program execution.",
+    "Perform DISPLAY-HEADER: Display header information and employee details.",
+    "Perform CALCULATE-HOURS: Determine regular and overtime hours based on HOURS-WORKED.",
+    "Perform CALCULATE-PAY: Calculate regular pay, overtime pay, and gross pay.",
+    "Perform CALCULATE-TAX: Determine the applicable tax rate based on GROSS-PAY and calculate TAX-AMOUNT.",
+    "Perform APPLY-BONUS: Determine BONUS-AMOUNT based on PERFORMANCE-RATING.",
+    "Perform CALCULATE-NET: Calculate NET-PAY by subtracting taxes and benefits from gross pay, and adding bonus.",
+    "Perform VALIDATE-PAY: Set PAY-STATUS and WARNING-MESSAGE based on NET-PAY value.",
+    "Perform DISPLAY-RESULTS: Display a detailed summary of the payroll calculation.",
+    "Stop the program execution."
+  ],
+  "business_rules": [
+    "Overtime hours are calculated for hours worked exceeding 40.",
+    "Overtime pay is calculated at 1.5 times the HOURLY-RATE.",
+    "Tax rate is 0.250 if GROSS-PAY > 1500, 0.200 if GROSS-PAY > 1000, otherwise 0.150.",
+    "Bonus amount is 200.00 if PERFORMANCE-RATING is 5, 100.00 if PERFORMANCE-RATING is 4, otherwise 0.",
+    "NET-PAY is calculated as GROSS-PAY - TAX-AMOUNT - BENEFIT-DEDUCTION + BONUS-AMOUNT.",
+    "If NET-PAY is less than 0, PAY-STATUS is 'ERROR' and WARNING-MESSAGE is 'NEGATIVE NET PAY DETECTED'.",
+    "If NET-PAY is equal to 0, PAY-STATUS is 'HOLD' and WARNING-MESSAGE is 'REVIEW ZERO PAYMENT'.",
+    "If NET-PAY is greater than 0, PAY-STATUS is 'APPROVED' and WARNING-MESSAGE is 'PAYROLL COMPLETED'."
+  ],
+  "source_snippet_references": {},
+  "edge_cases": [
+    "Employee works exactly 40 hours (no overtime).",
+    "Employee works less than 40 hours.",
+    "Gross pay falls exactly on a tax bracket threshold (e.g., 1000 or 1500).",
+    "Performance rating is not 4 or 5.",
+    "Net pay is exactly zero.",
+    "Net pay is negative.",
+    "Benefit deduction is higher than gross pay before deductions."
+  ],
+  "dependencies": [
+    {
+      "reference_name": "DISPLAY",
+      "resolved_filename": null,
+      "status": "unresolved"
+    },
+    {
+      "reference_name": "STOP RUN",
+      "resolved_filename": null,
+      "status": "unresolved"
+    }
+  ],
+  "critical_constraints": [
+    "All monetary calculations must maintain two decimal places."
+  ],
+  "assumptions_and_ambiguities": null,
+  "test_relevant_scenarios": [],
+  "confidence_assessment": null
+}

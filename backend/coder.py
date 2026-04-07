@@ -13,6 +13,8 @@ design-choice explanations, and logic-step mapping.
 
 from __future__ import annotations
 
+import time
+
 from .contracts import CoderOutput, LogicMap, MapperOutput, ReviewerOutput
 from .provider import LLMProvider
 from .prompts import CODER_SYSTEM_PROMPT, CODER_CHUNK_SYSTEM_PROMPT, CODER_REWRITE_ADDENDUM
@@ -266,16 +268,32 @@ class CoderAgent:
             for item in raw.get("deferred_items", []):
                 all_deferred.append(item)
 
+            # Rate limiting: Gemini free tier allows 15 RPM
+            # Sleep 4.5 seconds between chunks to stay under 13 requests/minute (safe margin)
+            if i < len(chunks) - 1:  # Don't sleep after last chunk
+                time.sleep(4.5)
+
         # --- Programmatically inject Global State ---
         global_inits = ["# --- Global State Initializations ---"]
+        needs_decimal = False
+
         for var in mapper_output.variables:
             val = var.initial_value
-            if var.python_type == "str" and val != "None":
+            if val == "None":
+                pass
+            elif var.python_type == "str":
                 if val == "SPACES":
                     val = '""'
                 elif not (val.startswith('"') or val.startswith("'")):
                     val = f'"{val}"'
+            elif var.python_type == "Decimal":
+                needs_decimal = True
+                val = f'Decimal("{val}")'
+            
             global_inits.append(f"{var.python_name} = {val}")
+        
+        if needs_decimal:
+            global_inits.insert(0, "from decimal import Decimal\n")
         
         global_inits_str = "\n".join(global_inits)
 
@@ -286,6 +304,7 @@ class CoderAgent:
         test_prompt = (
             "Generate Pytest tests for the following Python code.\n"
             "Only output the test file content.\n\n"
+            "STRICT TEST ALIGNMENT (CRITICAL): You must ONLY import and call functions/variables that actually exist in the final_python_code string provided below. Do not invent test scenarios for functions you did not write.\n\n"
             f"{global_state_str}\n\n"
             f"```python\n{final_python_code}\n```\n\n"
             "Output JSON: {{\"generated_tests\": \"...\"}}\n"

@@ -128,9 +128,9 @@ class LogicMap(BaseModel):
     edge_cases: list[str] = Field(default_factory=list)
     dependencies: list[DependencyResolution] = Field(default_factory=list)
     critical_constraints: list[str] = Field(default_factory=list)
-    assumptions_and_ambiguities: AssumptionsAndAmbiguities
-    test_relevant_scenarios: list[str] = Field(..., min_length=1)
-    confidence_assessment: ConfidenceAssessment
+    assumptions_and_ambiguities: AssumptionsAndAmbiguities | None = Field(default=None)
+    test_relevant_scenarios: list[str] = Field(default_factory=list)
+    confidence_assessment: ConfidenceAssessment | None = Field(default=None)
 
     # ------------------------------------------------------------------
     # Convenience helpers

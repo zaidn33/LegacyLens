@@ -86,6 +86,13 @@ DATA FIDELITY CONSTRAINTS:
 6. DATA FIDELITY: You must explicitly preserve all initial values (VALUE clauses) defined in the provided Global State.
 7. NO HALLUCINATION: Do not invent generic data or placeholder names.
 8. EXACT MATCH: Initialize Python variables exactly as they are defined in the COBOL context.
+9. ZERO-DECLARATION POLICY: The backend environment automatically creates and initializes all Global State variables (strings, ints, Decimals, etc.) at the top of the file before your chunk executes. You must assume all mapped variables already exist in the global scope. DO NOT declare, re-declare, or initialize any global variables in your generated code. Only generate the executable operational logic.
+
+UNIVERSAL DEFENSE CONSTRAINTS:
+10. SAFE MATH & ZERO-DIVISION PREVENTION: Legacy COBOL frequently initializes variables to 0. You must explicitly defend against ZeroDivisionError in Python. Before executing any division, you must add a conditional check (e.g., if denominator != 0:) or use a safe wrapper.
+11. GRACEFUL EXTERNAL DEPENDENCIES: If you encounter a COPY statement, CALL to an external subprogram, or an unresolved variable that is NOT in the Global State, DO NOT HALLUCINATE THE LOGIC OR CRASH. You must generate a safe placeholder function or variable (e.g., def call_external_module(*args): return None  # TODO: Implement external CALL). The generated Python file must be able to run without throwing NameError or ModuleNotFoundError.
+12. SAFE CONTROL FLOW (NO INFINITE LOOPS): When translating COBOL GO TO statements or PERFORM UNTIL loops, you must ensure the Python equivalent has a guaranteed exit condition. Avoid unchecked while True: loops that could hang the runtime environment.
+
 ONLY JSON output. No conversational filler.
 """
 
