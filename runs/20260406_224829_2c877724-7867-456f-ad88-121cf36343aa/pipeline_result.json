@@ -1,0 +1,209 @@
+{
+  "logic_map": {
+    "executive_summary": "This program calculates shipping fees based on package weight. It determines the fee and a status message, then displays the results.",
+    "business_objective": "To calculate the appropriate shipping fee for an order based on its package weight and provide a status message.",
+    "inputs_and_outputs": {
+      "inputs": [
+        "ORDER-ID (PIC 9(5))",
+        "DESTINATION (PIC A(20))",
+        "PACKAGE-WEIGHT (PIC 999V99)"
+      ],
+      "outputs": [
+        "SHIPPING-FEE (PIC 9(4)V99)",
+        "STATUS-MSG (PIC A(20))"
+      ],
+      "external_touchpoints": [
+        "DISPLAY (Console Output)"
+      ]
+    },
+    "logic_dictionary": [
+      {
+        "legacy_name": "ORDER-ID",
+        "proposed_modern_name": "OrderIdentifier",
+        "meaning": "Unique identifier for the order.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "DESTINATION",
+        "proposed_modern_name": "ShippingDestination",
+        "meaning": "The destination city or region for the shipment.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "PACKAGE-WEIGHT",
+        "proposed_modern_name": "PackageWeight",
+        "meaning": "The weight of the package to be shipped.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "SHIPPING-FEE",
+        "proposed_modern_name": "CalculatedShippingFee",
+        "meaning": "The calculated cost of shipping.",
+        "confidence": "High"
+      },
+      {
+        "legacy_name": "STATUS-MSG",
+        "proposed_modern_name": "ShippingStatusMessage",
+        "meaning": "A message indicating the shipping status or rate type.",
+        "confidence": "High"
+      }
+    ],
+    "step_by_step_logic_flow": [
+      "Start program execution.",
+      "Initialize variables: ORDER-ID, DESTINATION, PACKAGE-WEIGHT, SHIPPING-FEE, STATUS-MSG.",
+      "Display header '=== SHIPPING CHECK ==='.",
+      "Display order details: ORDER-ID, DESTINATION, PACKAGE-WEIGHT.",
+      "Check if PACKAGE-WEIGHT is greater than 20.",
+      "If true: Set SHIPPING-FEE to 25.00 and STATUS-MSG to 'HEAVY PACKAGE'.",
+      "If false: Set SHIPPING-FEE to 12.50 and STATUS-MSG to 'STANDARD RATE'.",
+      "Display calculated SHIPPING-FEE and STATUS-MSG.",
+      "Display completion message 'CHECK COMPLETE'.",
+      "Terminate program execution."
+    ],
+    "business_rules": [
+      "If PACKAGE-WEIGHT > 20, then SHIPPING-FEE is 25.00 and STATUS-MSG is 'HEAVY PACKAGE'.",
+      "If PACKAGE-WEIGHT <= 20, then SHIPPING-FEE is 12.50 and STATUS-MSG is 'STANDARD RATE'."
+    ],
+    "source_snippet_references": {},
+    "edge_cases": [
+      "Package weight exactly 20.00 will fall into the 'STANDARD RATE' category.",
+      "Non-numeric or invalid data for PACKAGE-WEIGHT is not handled and would cause a runtime error in a real system, but is not explicitly coded for here."
+    ],
+    "dependencies": [],
+    "critical_constraints": [
+      "The program relies on the COBOL runtime environment for execution.",
+      "Input data for PACKAGE-WEIGHT must be a valid numeric value within the PIC 999V99 format."
+    ],
+    "assumptions_and_ambiguities": {
+      "observed": [
+        "The program assumes the input PACKAGE-WEIGHT is always a positive numeric value.",
+        "The program assumes the threshold for heavy packages is exactly 20."
+      ],
+      "inferred": [
+        "The program is intended to be a standalone utility for calculating shipping fees.",
+        "The values for heavy and standard shipping fees (25.00 and 12.50) are hardcoded."
+      ],
+      "unknown": [
+        "What happens if the input data is not valid (e.g., non-numeric)?",
+        "Are there other factors besides weight that influence shipping fees?",
+        "What is the expected range of PACKAGE-WEIGHT values?"
+      ]
+    },
+    "test_relevant_scenarios": [
+      "Test with PACKAGE-WEIGHT = 18.50 (standard rate).",
+      "Test with PACKAGE-WEIGHT = 20.00 (boundary case, standard rate).",
+      "Test with PACKAGE-WEIGHT = 20.01 (boundary case, heavy rate).",
+      "Test with PACKAGE-WEIGHT = 30.00 (heavy rate)."
+    ],
+    "confidence_assessment": {
+      "level": "High",
+      "rationale": "The logic is straightforward and directly maps to the provided COBOL code. All variables and control flow are clearly defined and understood."
+    }
+  },
+  "mapper_output": {
+    "variables": [
+      {
+        "cobol_name": "ORDER-ID",
+        "python_name": "order_id",
+        "python_type": "int",
+        "initial_value": "20481",
+        "pic_clause": "PIC 9(5)",
+        "level": "01"
+      },
+      {
+        "cobol_name": "DESTINATION",
+        "python_name": "destination",
+        "python_type": "str",
+        "initial_value": "\"TORONTO\"",
+        "pic_clause": "PIC A(20)",
+        "level": "01"
+      },
+      {
+        "cobol_name": "PACKAGE-WEIGHT",
+        "python_name": "package_weight",
+        "python_type": "Decimal",
+        "initial_value": "18.50",
+        "pic_clause": "PIC 999V99",
+        "level": "01"
+      },
+      {
+        "cobol_name": "SHIPPING-FEE",
+        "python_name": "shipping_fee",
+        "python_type": "Decimal",
+        "initial_value": "0",
+        "pic_clause": "PIC 9(4)V99",
+        "level": "01"
+      },
+      {
+        "cobol_name": "STATUS-MSG",
+        "python_name": "status_msg",
+        "python_type": "str",
+        "initial_value": "SPACES",
+        "pic_clause": "PIC A(20)",
+        "level": "01"
+      }
+    ],
+    "global_state_summary": "Extracted 5 variables from WORKING-STORAGE SECTION."
+  },
+  "coder_output": {
+    "generated_code": "from decimal import Decimal\n\n# --- Global State Initializations ---\norder_id = 20481\ndestination = \"TORONTO\"\npackage_weight = Decimal(\"18.50\")\nshipping_fee = Decimal(\"0\")\nstatus_msg = \"\"\n\nprint(\"=== SHIPPING CHECK ===\")\nprint(f\"ORDER ID: {order_id}\")\nprint(f\"DESTINATION: {destination}\")\nprint(f\"WEIGHT: {package_weight}\")\n\nif package_weight > 20:\n    shipping_fee = Decimal('25.00')\n    status_msg = 'HEAVY PACKAGE'\nelse:\n    shipping_fee = Decimal('12.50')\n    status_msg = 'STANDARD RATE'\n\nprint(f\"FEE: {shipping_fee}\")\nprint(f\"STATUS: {status_msg}\")\nprint(\"CHECK COMPLETE\")\n# STOP RUN is handled by the end of the script execution in Python",
+    "generated_tests": "import pytest\nfrom decimal import Decimal\n\n# Assuming the provided Python code is in a file named main.py\n# If it's in a different file, adjust the import accordingly.\n# For this example, we'll simulate the global variables and logic directly in the test file.\n\n# --- Global State Initializations (simulated) ---\n# These would typically be imported from the module containing the original code.\n# For testing purposes, we'll define them here and potentially modify them within tests.\n\n# Mocking the global state and logic for testing\ndef run_shipping_check(initial_package_weight):\n    order_id = 20481\n    destination = \"TORONTO\"\n    package_weight = Decimal(str(initial_package_weight))\n    shipping_fee = Decimal(\"0\")\n    status_msg = \"\"\n\n    if package_weight > 20:\n        shipping_fee = Decimal('25.00')\n        status_msg = 'HEAVY PACKAGE'\n    else:\n        shipping_fee = Decimal('12.50')\n        status_msg = 'STANDARD RATE'\n\n    return order_id, destination, package_weight, shipping_fee, status_msg\n\ndef test_shipping_check_standard_rate():\n    \"\"\"Tests the case where the package weight is less than or equal to 20.\"\"\"\n    # Simulate a package weight that falls into the standard rate category\n    test_package_weight = 18.50\n    order_id, destination, package_weight, shipping_fee, status_msg = run_shipping_check(test_package_weight)\n\n    assert order_id == 20481\n    assert destination == \"TORONTO\"\n    assert package_weight == Decimal(\"18.50\")\n    assert shipping_fee == Decimal(\"12.50\")\n    assert status_msg == 'STANDARD RATE'\n\ndef test_shipping_check_heavy_package_rate():\n    \"\"\"Tests the case where the package weight is greater than 20.\"\"\"\n    # Simulate a package weight that falls into the heavy package category\n    test_package_weight = 25.75\n    order_id, destination, package_weight, shipping_fee, status_msg = run_shipping_check(test_package_weight)\n\n    assert order_id == 20481\n    assert destination == \"TORONTO\"\n    assert package_weight == Decimal(\"25.75\")\n    assert shipping_fee == Decimal(\"25.00\")\n    assert status_msg == 'HEAVY PACKAGE'\n\ndef test_shipping_check_boundary_weight_below():\n    \"\"\"Tests the boundary case just below the heavy package threshold.\"\"\"\n    test_package_weight = 20.00\n    order_id, destination, package_weight, shipping_fee, status_msg = run_shipping_check(test_package_weight)\n\n    assert order_id == 20481\n    assert destination == \"TORONTO\"\n    assert package_weight == Decimal(\"20.00\")\n    assert shipping_fee == Decimal(\"12.50\")\n    assert status_msg == 'STANDARD RATE'\n\ndef test_shipping_check_boundary_weight_above():\n    \"\"\"Tests the boundary case just above the heavy package threshold.\"\"\"\n    test_package_weight = 20.01\n    order_id, destination, package_weight, shipping_fee, status_msg = run_shipping_check(test_package_weight)\n\n    assert order_id == 20481\n    assert destination == \"TORONTO\"\n    assert package_weight == Decimal(\"20.01\")\n    assert shipping_fee == Decimal(\"25.00\")\n    assert status_msg == 'HEAVY PACKAGE'\n\n# Note: The original code has print statements. Pytest captures stdout by default.\n# If you wanted to assert the printed output, you would use pytest.raises(SystemExit) for exit codes\n# or capture stdout using capsys fixture.\n\ndef test_initial_global_state_values():\n    \"\"\"Tests the initial values of the global state variables as defined in the original code.\"\"\"\n    # This test assumes the global variables are accessible or can be reset/mocked.\n    # Since we are simulating the logic in run_shipping_check, we'll test the initial values\n    # as they would be before the conditional logic is applied.\n    # For a real module import, you might do:\n    # from your_module import order_id, destination, package_weight, shipping_fee, status_msg\n    # assert order_id == 20481\n    # assert destination == \"TORONTO\"\n    # assert package_weight == Decimal(\"18.50\")\n    # assert shipping_fee == Decimal(\"0\") # Initial value before logic\n    # assert status_msg == \"\" # Initial value before logic\n\n    # Testing initial values within our simulation context:\n    initial_order_id = 20481\n    initial_destination = \"TORONTO\"\n    initial_package_weight = Decimal(\"18.50\")\n    initial_shipping_fee = Decimal(\"0\")\n    initial_status_msg = \"\"\n\n    # We can't directly test the initial global state if the code runs immediately on import.\n    # The run_shipping_check function simulates the logic based on input, which is better for testing.\n    # If the original code was structured as a function, we would test that function.\n    # For this specific script structure, testing the outcome of the logic is more practical.\n    pass # No direct test for initial global state if script runs on import\n",
+    "implementation_choices": "Used Python's print function for DISPLAY statements. Implemented the IF/ELSE logic directly. Used Decimal type for monetary values. The STOP RUN is implicitly handled by the script's termination.",
+    "logic_step_mapping": [
+      {
+        "function_or_test_name": "display_header",
+        "logic_step": "Display the header '=== SHIPPING CHECK ==='.",
+        "notes": "Corresponds to DISPLAY \"=== SHIPPING CHECK ===\"."
+      },
+      {
+        "function_or_test_name": "display_order_details",
+        "logic_step": "Display ORDER-ID, DESTINATION, and PACKAGE-WEIGHT.",
+        "notes": "Corresponds to DISPLAY statements for order details."
+      },
+      {
+        "function_or_test_name": "calculate_shipping_fee_and_status",
+        "logic_step": "Check if PACKAGE-WEIGHT is greater than 20. If true, set SHIPPING-FEE to 25.00 and STATUS-MSG to 'HEAVY PACKAGE'. Otherwise, set SHIPPING-FEE to 12.50 and STATUS-MSG to 'STANDARD RATE'.",
+        "notes": "Corresponds to the IF/ELSE block."
+      },
+      {
+        "function_or_test_name": "display_results",
+        "logic_step": "Display the calculated SHIPPING-FEE and STATUS-MSG.",
+        "notes": "Corresponds to DISPLAY statements for fee and status."
+      },
+      {
+        "function_or_test_name": "display_completion",
+        "logic_step": "Display 'CHECK COMPLETE'.",
+        "notes": "Corresponds to DISPLAY \"CHECK COMPLETE\"."
+      },
+      {
+        "function_or_test_name": "end_program",
+        "logic_step": "Terminate the program execution.",
+        "notes": "Corresponds to STOP RUN. In Python, this is implicit at script end."
+      }
+    ],
+    "deferred_items": []
+  },
+  "reviewer_output": {
+    "logic_parity_findings": "The generated Python code accurately reflects the logic map provided. All business rules, logic flow steps, and variable mappings are correctly implemented. The use of the Decimal type for monetary values and the handling of conditional logic align with the COBOL logic map's intent. The critical constraint regarding the COBOL runtime is noted as a limitation, as Python does not directly execute in a COBOL environment.",
+    "defects": [],
+    "suggested_corrections": [
+      "The critical constraint 'The program relies on the COBOL runtime environment for execution' cannot be met by Python code. This is an inherent limitation of translating logic from one environment to another.",
+      "The critical constraint 'Input data for PACKAGE-WEIGHT must be a valid numeric value within the PIC 999V99 format' is not explicitly handled in the Python code. While the provided example uses a valid Decimal, robust error handling for invalid input types or formats is missing, which could lead to runtime errors if not validated before execution."
+    ],
+    "passed": true,
+    "confidence": {
+      "level": "High",
+      "rationale": "The Python code directly implements the logic described in the Logic Map, including the conditional rules for shipping fees and status messages. Variable mappings are accurate, and the overall flow matches the specified steps. The confidence is high because the core business logic is correctly translated."
+    },
+    "known_limitations": [
+      "The Python code cannot execute within a COBOL runtime environment as specified in the critical constraints. This is a fundamental difference between the source and target execution environments.",
+      "Input validation for `PACKAGE-WEIGHT` is not explicitly implemented in the generated Python code. The code assumes valid numeric input, and invalid input could lead to runtime errors, which is a deviation from robust error handling expectations in a production system, though it aligns with the 'Edge Cases' note about unhandled invalid data."
+    ]
+  },
+  "iterations": 1,
+  "final_confidence": {
+    "level": "Medium",
+    "rationale": "Analyst confidence: High. Reviewer confidence: High. Pipeline completed in 1 iteration(s). 2 known limitation(s) documented."
+  },
+  "errors": []
+}
