@@ -247,6 +247,31 @@ export default function ProcessPage({
     <div className={styles.page}>
       {/* Background layers */}
       <div className={styles.bgImage} />
+      {/* Shooting stars */}
+      <div className={styles.starsContainer}>
+        {/* Original 8 stars */}
+        <div className={styles.shootingStar} style={{ top: '6%', left: '5%', animationDelay: '0s', animationDuration: '4.5s' }} />
+        <div className={styles.shootingStar} style={{ top: '20%', left: '25%', animationDelay: '2.5s', animationDuration: '3.8s' }} />
+        <div className={styles.shootingStar} style={{ top: '45%', left: '60%', animationDelay: '5s', animationDuration: '4s' }} />
+        <div className={styles.shootingStar} style={{ top: '14%', left: '80%', animationDelay: '7.5s', animationDuration: '3.2s' }} />
+        <div className={styles.shootingStar} style={{ top: '55%', left: '15%', animationDelay: '9s', animationDuration: '5s' }} />
+        <div className={styles.shootingStar} style={{ top: '35%', left: '90%', animationDelay: '3.5s', animationDuration: '4.2s' }} />
+        <div className={styles.shootingStar} style={{ top: '70%', left: '40%', animationDelay: '6.5s', animationDuration: '3.5s' }} />
+        <div className={styles.shootingStar} style={{ top: '8%', left: '50%', animationDelay: '1.5s', animationDuration: '5.5s' }} />
+        {/* Additional 12 stars */}
+        <div className={styles.shootingStar} style={{ top: '28%', left: '10%', animationDelay: '0.8s', animationDuration: '4.1s' }} />
+        <div className={styles.shootingStar} style={{ top: '82%', left: '85%', animationDelay: '4.3s', animationDuration: '5.2s' }} />
+        <div className={styles.shootingStar} style={{ top: '52%', left: '38%', animationDelay: '8.8s', animationDuration: '3.7s' }} />
+        <div className={styles.shootingStar} style={{ top: '25%', left: '55%', animationDelay: '1.2s', animationDuration: '4.8s' }} />
+        <div className={styles.shootingStar} style={{ top: '90%', left: '25%', animationDelay: '5.7s', animationDuration: '3.9s' }} />
+        <div className={styles.shootingStar} style={{ top: '10%', left: '95%', animationDelay: '3.1s', animationDuration: '4.3s' }} />
+        <div className={styles.shootingStar} style={{ top: '65%', left: '5%', animationDelay: '7.9s', animationDuration: '5.1s' }} />
+        <div className={styles.shootingStar} style={{ top: '45%', left: '85%', animationDelay: '2.4s', animationDuration: '3.4s' }} />
+        <div className={styles.shootingStar} style={{ top: '75%', left: '70%', animationDelay: '9.5s', animationDuration: '4.6s' }} />
+        <div className={styles.shootingStar} style={{ top: '15%', left: '40%', animationDelay: '4.8s', animationDuration: '3.6s' }} />
+        <div className={styles.shootingStar} style={{ top: '60%', left: '55%', animationDelay: '6.1s', animationDuration: '4.9s' }} />
+        <div className={styles.shootingStar} style={{ top: '35%', left: '75%', animationDelay: '8.4s', animationDuration: '4.4s' }} />
+      </div>
       <div className={styles.bgOverlay} />
 
       <header className={styles.topBar}>

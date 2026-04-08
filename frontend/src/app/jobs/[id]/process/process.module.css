@@ -31,6 +31,91 @@
   pointer-events: none;
 }
 
+/* Shooting stars */
+.starsContainer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 30% 65%, rgba(255,255,255,0.2), transparent),
+    radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.25), transparent),
+    radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.15), transparent),
+    radial-gradient(1px 1px at 85% 75%, rgba(255,255,255,0.2), transparent),
+    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.15), transparent),
+    radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.25), transparent),
+    radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.2), transparent),
+    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1.5px 1.5px at 55% 55%, rgba(255,255,255,0.3), transparent);
+}
+
+.shootingStar {
+  position: absolute;
+  width: 180px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0.4) 30%, rgba(255,255,255,0.1) 60%, transparent);
+  border-radius: 999px;
+  transform: rotate(-38deg);
+  animation: shoot linear infinite;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));
+}
+
+.shootingStar::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -1px;
+  width: 8px;
+  height: 6px;
+  background: radial-gradient(ellipse, rgba(255,255,255,1), rgba(255,255,255,0.6) 40%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(0.5px);
+}
+
+.shootingStar::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  width: 12px;
+  height: 10px;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.3), transparent 60%);
+  border-radius: 50%;
+  animation: twinkle 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes shoot {
+  0% {
+    transform: rotate(-38deg) translateX(0);
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.9;
+  }
+  15% {
+    opacity: 1;
+  }
+  35% {
+    transform: rotate(-38deg) translateX(500px);
+    opacity: 0.5;
+  }
+  50% {
+    transform: rotate(-38deg) translateX(900px);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes twinkle {
+  from { opacity: 0.5; transform: scale(0.8); }
+  to   { opacity: 1;   transform: scale(1.2); }
+}
+
 .topBar {
   display: flex;
   align-items: center;
